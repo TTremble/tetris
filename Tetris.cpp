@@ -14,6 +14,8 @@
 /* a premiere vue, je dirai qu'il faut une classe pour le plateau de jeu,
 une classe pour les blocs, et plein de fonction pour rendre tout ça dynamique*/
 
+const int TILESIZE=32;
+
 const int M=20;
 const int N=10;
 int field[M][N]={0};
@@ -28,13 +30,13 @@ const int CYAN=6;
 const int VERT=7;
 
 // TILES
-const SDL_Rect TILE_ROUGE = {0,0,27,27};
-const SDL_Rect TILE_BLEU = {27,0,27,27};
-const SDL_Rect TILE_ORANGE = {54,0,27,27};
-const SDL_Rect TILE_JAUNE = {81,0,27,27};
-const SDL_Rect TILE_VIOLET = {108,0,27,27};
-const SDL_Rect TILE_CYAN = {135,0,27,27};
-const SDL_Rect TILE_VERT = {162,0,27,27};
+const SDL_Rect TILE_ROUGE = {0,0,TILESIZE,TILESIZE};
+const SDL_Rect TILE_BLEU = {TILESIZE,0,TILESIZE,TILESIZE};
+const SDL_Rect TILE_ORANGE = {2*TILESIZE,0,TILESIZE,TILESIZE};
+const SDL_Rect TILE_JAUNE = {3*TILESIZE,0,TILESIZE,TILESIZE};
+const SDL_Rect TILE_VIOLET = {4*TILESIZE,0,TILESIZE,TILESIZE};
+const SDL_Rect TILE_CYAN = {5*TILESIZE,0,TILESIZE,TILESIZE};
+const SDL_Rect TILE_VERT = {6*TILESIZE,0,TILESIZE,TILESIZE};
 
 struct point{
     int x,y;
@@ -59,30 +61,77 @@ shape blocks[7]={
 int main()
 {
     //Initialisation de la fenêtre de jeu
-    SDL_Window *window=SDL_CreateWindow("Tetris",SDL_WINDOWPOS_CENTERED,SDL_WINDOWPOS_CENTERED,320,613,0);
+    SDL_Window *window=SDL_CreateWindow("Tetris",SDL_WINDOWPOS_CENTERED,SDL_WINDOWPOS_CENTERED,384,736,0);
     bool keep_window_open = true;
     SDL_Surface *image = SDL_LoadBMP("image.bmp");
     SDL_Surface *tiles = SDL_LoadBMP("Tiles.bmp");
     SDL_Surface *window_surface = SDL_GetWindowSurface(window);
-    //Gestion fenêtre
+    //Quelques variables
+    int dx=0;
+    bool rotate=0;
+    int colorNum=1;
+    bool reset=true;
+    unsigned int delay=1000;
+    //Ecrire un truc ici
     while(keep_window_open)
     {
+        //Events
         SDL_Event e;
         while(SDL_PollEvent(&e) > 0)
         {
+            //closing window
             switch(e.type){
                 case SDL_QUIT:
                     keep_window_open=false;
                     break;
             }
-            SDL_BlitSurface(image, NULL, window_surface, NULL);
-            int n=5;
-            for(int i=0;i<4;i++){
-                a[i].x = blocks[n].cases[i]%2;
-                a[i].y = blocks[n].cases[i]/2;
+            //Key presses
+            if(e.type==SDL_KEYDOWN){
+                if(e.key.keysym.sym==SDLK_LEFT&&(a[0].x!=0&&a[1].x!=0&&a[2].x!=0&&a[3].x!=0)){
+                    dx=-1;
+                }
+                else if(e.key.keysym.sym==SDLK_RIGHT&&(a[0].x!=9&&a[1].x!=9&&a[2].x!=9&&a[3].x!=9)){
+                    dx=+1;
+                }
+                else if(e.key.keysym.sym==SDLK_UP){
+                    rotate=true;
+                }
             }
+            SDL_BlitSurface(image, NULL, window_surface, NULL);
+            //Movement
             for(int i=0;i<4;i++){
-                SDL_Rect POS = {(a[i].x+1)*27,(a[i].y)*27,27,27};
+                a[i].x +=dx;
+            }
+            //Rotation
+            if(rotate){
+                point p= a[1]; //Centre de rotation
+                for (int i=0;i<4;i++){
+                    int x=a[i].y-p.y;
+                    int y=a[i].x-p.x;
+                    a[i].x = p.x-x;
+                    a[i].y = p.y+y;
+                }
+            }
+            //Game
+            if(SDL_GetTicks()>delay){
+                delay+=1000;
+                for(int i=0;i<4;i++){
+                    a[i].y++;
+                }
+            }
+
+            int n=5;
+            if(reset){
+                for(int i=0;i<4;i++){
+                    a[i].x = blocks[n].cases[i]%2;
+                    a[i].y = blocks[n].cases[i]/2;
+                }
+            }
+            reset=false;
+            dx=0;
+            rotate=0;
+            for(int i=0;i<4;i++){
+                SDL_Rect POS = {(a[i].x+1)*TILESIZE,(a[i].y)*TILESIZE,TILESIZE,TILESIZE};
                 SDL_BlitSurface(tiles,&blocks[n].couleur,window_surface,&POS);
             }
             SDL_UpdateWindowSurface(window);
