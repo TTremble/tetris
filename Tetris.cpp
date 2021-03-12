@@ -13,7 +13,7 @@
 
 /* a premiere vue, je dirai qu'il faut une classe pour le plateau de jeu,
 une classe pour les blocs, et plein de fonction pour rendre tout ça dynamique*/
-
+const int SPEED=300;
 const int TILESIZE=32;
 
 const int M=20;
@@ -37,26 +37,40 @@ const SDL_Rect TILE_JAUNE = {3*TILESIZE,0,TILESIZE,TILESIZE};
 const SDL_Rect TILE_VIOLET = {4*TILESIZE,0,TILESIZE,TILESIZE};
 const SDL_Rect TILE_CYAN = {5*TILESIZE,0,TILESIZE,TILESIZE};
 const SDL_Rect TILE_VERT = {6*TILESIZE,0,TILESIZE,TILESIZE};
+SDL_Rect tab[7]= {TILE_ROUGE,TILE_BLEU,TILE_ORANGE,TILE_JAUNE,TILE_VIOLET,TILE_CYAN,TILE_VERT};
 
 struct point{
     int x,y;
 } a[4], b[4];
 
 struct shape{
-    SDL_Rect couleur;
+    int couleur;
+    SDL_Rect sprite;
     int cases[7];
     double x,y;
 };
 
 shape blocks[7]={
-    {TILE_ROUGE,{1,3,5,7},5,4}, // I
-    {TILE_BLEU,{2,3,5,7},5,4}, // L
-    {TILE_ORANGE,{3,5,7,6},5,4}, // J
-    {TILE_JAUNE,{2,3,4,5},5,4}, // O
-    {TILE_VIOLET,{3,5,4,6},5,4}, // S
-    {TILE_CYAN,{3,5,4,7},5,4}, // T
-    {TILE_VERT,{2,4,5,7},5,4}  // Z
+    {ROUGE,TILE_ROUGE,{1,3,5,7},5,4}, // I
+    {BLEU,TILE_BLEU,{2,3,5,7},5,4}, // L
+    {ORANGE,TILE_ORANGE,{3,5,7,6},5,4}, // J
+    {JAUNE,TILE_JAUNE,{2,3,4,5},5,4}, // O
+    {VIOLET,TILE_VIOLET,{3,5,4,6},5,4}, // S
+    {CYAN,TILE_CYAN,{3,5,4,7},5,4}, // T
+    {VERT,TILE_VERT,{2,4,5,7},5,4}  // Z
 };
+
+bool check(){
+    for(int i=0;i<4;i++){
+        if(a[i].x>=N||a[i].x<0||a[i].y==M+1){
+            return false;
+        }
+        if(field[a[i].y][a[i].x]!=0){
+            return false;
+        }
+    }
+    return true;
+}
 
 int main()
 {
@@ -67,11 +81,17 @@ int main()
     SDL_Surface *tiles = SDL_LoadBMP("Tiles.bmp");
     SDL_Surface *window_surface = SDL_GetWindowSurface(window);
     //Quelques variables
+    int counter=0;
+    int SPEED=300;
+    int speed_ini=SPEED;
+    int tps_actuel=0;
+    int tps_prec=0;
+    int n=rand()%7;
     int dx=0;
     bool rotate=0;
     int colorNum=1;
     bool reset=true;
-    unsigned int delay=1000;
+    unsigned int delay=0;
     //Ecrire un truc ici
     while(keep_window_open)
     {
@@ -87,54 +107,113 @@ int main()
             }
             //Key presses
             if(e.type==SDL_KEYDOWN){
-                if(e.key.keysym.sym==SDLK_LEFT&&(a[0].x!=0&&a[1].x!=0&&a[2].x!=0&&a[3].x!=0)){
+                if(e.key.keysym.sym==SDLK_LEFT){
                     dx=-1;
                 }
-                else if(e.key.keysym.sym==SDLK_RIGHT&&(a[0].x!=9&&a[1].x!=9&&a[2].x!=9&&a[3].x!=9)){
+                else if(e.key.keysym.sym==SDLK_RIGHT){
                     dx=+1;
                 }
                 else if(e.key.keysym.sym==SDLK_UP){
                     rotate=true;
                 }
+                else if(e.key.keysym.sym==SDLK_DOWN){
+                    SPEED=SPEED/10;
+                }
+                else if(e.key.keysym.sym=SDLK_SPACE){
+                    SPEED=1;
+                }
             }
-            SDL_BlitSurface(image, NULL, window_surface, NULL);
-            //Movement
+        }
+        SDL_BlitSurface(image, NULL, window_surface, NULL);
+        //Movement
+        for(int i=0;i<4;i++){
+            b[i]=a[i];
+            a[i].x +=dx;
+        }
+        if(!check()){
             for(int i=0;i<4;i++){
-                a[i].x +=dx;
+                a[i]=b[i];
             }
-            //Rotation
-            if(rotate){
-                point p= a[1]; //Centre de rotation
-                for (int i=0;i<4;i++){
-                    int x=a[i].y-p.y;
-                    int y=a[i].x-p.x;
-                    a[i].x = p.x-x;
-                    a[i].y = p.y+y;
-                }
+        }
+        //Rotation
+        if(rotate){
+            point p= a[1]; //Centre de rotation
+            for (int i=0;i<4;i++){
+                b[i]=a[i];
+                int x=a[i].y-p.y;
+                int y=a[i].x-p.x;
+                a[i].x = p.x-x;
+                a[i].y = p.y+y;
             }
-            //Game
-            if(SDL_GetTicks()>delay){
-                delay+=1000;
+        }
+        if(!check()){
+            for(int i=0;i<4;i++){
+                a[i]=b[i];
+            }
+        }
+        //Ini
+        if(reset){
+            for(int i=0;i<4;i++){
+                a[i].x = blocks[n].cases[i]%2;
+                a[i].y = blocks[n].cases[i]/2;
+            }
+        }
+        //Game
+        tps_actuel=SDL_GetTicks();
+        if(tps_actuel-tps_prec>SPEED){
+            for(int i=0;i<4;i++){
+                b[i]=a[i];
+                a[i].y++;
+            }
+            tps_prec=tps_actuel;
+            if(!check()){
                 for(int i=0;i<4;i++){
-                    a[i].y++;
+                    field[b[i].y][b[i].x]=blocks[n].couleur;
                 }
-            }
-
-            int n=5;
-            if(reset){
+                n=rand()%7;
                 for(int i=0;i<4;i++){
                     a[i].x = blocks[n].cases[i]%2;
                     a[i].y = blocks[n].cases[i]/2;
                 }
             }
-            reset=false;
-            dx=0;
-            rotate=0;
-            for(int i=0;i<4;i++){
-                SDL_Rect POS = {(a[i].x+1)*TILESIZE,(a[i].y)*TILESIZE,TILESIZE,TILESIZE};
-                SDL_BlitSurface(tiles,&blocks[n].couleur,window_surface,&POS);
-            }
-            SDL_UpdateWindowSurface(window);
         }
+        //Accélération
+        if(SDL_GetTicks()%5000==0){
+            speed_ini+=-1;
+        }
+        //Draw
+        for(int i =0;i<M;i++){
+            for(int j=0;j<N;j++){
+                if(field[i][j]!=0){
+                    SDL_Rect PLACE = {(j+1)*TILESIZE,(i+1)*TILESIZE,TILESIZE,TILESIZE};
+                    SDL_BlitSurface(tiles,&tab[field[i][j]-1],window_surface,&PLACE);
+                }
+            }
+        }
+        //Check Lines
+        int k=M-1;
+        for(int i=M-1;i>0;i--){
+            int count=0;
+            for(int j=0;j<N;j++){
+                if(field[i][j]){
+                    count++;
+                }
+                field[k][j]=field[i][j];
+            }
+            if(count<N){
+                k--;
+            }
+        }
+
+        //Fin
+        reset=false;
+        SPEED=speed_ini;
+        dx=0;
+        rotate=0;
+        for(int i=0;i<4;i++){
+            SDL_Rect POS = {(a[i].x+1)*TILESIZE,(a[i].y)*TILESIZE,TILESIZE,TILESIZE};
+            SDL_BlitSurface(tiles,&blocks[n].sprite,window_surface,&POS);
+        }
+        SDL_UpdateWindowSurface(window);
     }
 }
