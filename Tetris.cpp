@@ -11,8 +11,6 @@
 #include<iostream>
 #include<SDL2/SDL.h>
 
-/* a premiere vue, je dirai qu'il faut une classe pour le plateau de jeu,
-une classe pour les blocs, et plein de fonction pour rendre tout ça dynamique*/
 const int SPEED=300;
 const int TILESIZE=32;
 
@@ -72,16 +70,20 @@ bool check(){
     return true;
 }
 
+
 int main()
 {
     //Initialisation de la fenêtre de jeu
-    SDL_Window *window=SDL_CreateWindow("Tetris",SDL_WINDOWPOS_CENTERED,SDL_WINDOWPOS_CENTERED,384,736,0);
+    SDL_Window *window=SDL_CreateWindow("Tetris",SDL_WINDOWPOS_CENTERED,SDL_WINDOWPOS_CENTERED,576,736,0);
     bool keep_window_open = true;
     SDL_Surface *image = SDL_LoadBMP("image.bmp");
     SDL_Surface *tiles = SDL_LoadBMP("Tiles.bmp");
     SDL_Surface *window_surface = SDL_GetWindowSurface(window);
     //Quelques variables
+    int score=0;
     int counter=0;
+    int lcount=0;
+    int level=1;
     int SPEED=300;
     int speed_ini=SPEED;
     int tps_actuel=0;
@@ -154,8 +156,8 @@ int main()
         //Ini
         if(reset){
             for(int i=0;i<4;i++){
-                a[i].x = blocks[n].cases[i]%2;
-                a[i].y = blocks[n].cases[i]/2;
+                a[i].x = blocks[n].cases[i]%2 + N/2 -1;
+                a[i].y = blocks[n].cases[i]/2 -1;
             }
         }
         //Game
@@ -172,8 +174,11 @@ int main()
                 }
                 n=rand()%7;
                 for(int i=0;i<4;i++){
-                    a[i].x = blocks[n].cases[i]%2;
-                    a[i].y = blocks[n].cases[i]/2;
+                    if(a[i].y<2){
+                        keep_window_open=false;
+                    }
+                    a[i].x = blocks[n].cases[i]%2 + N/2 -1;
+                    a[i].y = blocks[n].cases[i]/2-1;
                 }
             }
         }
@@ -192,6 +197,7 @@ int main()
         }
         //Check Lines
         int k=M-1;
+        int mult=0;
         for(int i=M-1;i>0;i--){
             int count=0;
             for(int j=0;j<N;j++){
@@ -203,7 +209,34 @@ int main()
             if(count<N){
                 k--;
             }
+            else{
+                mult++;
+                lcount++;
+            }
         }
+
+        if(lcount>10){
+            level++;
+            lcount=lcount-10;
+        }
+
+        switch(mult){
+            case 0:
+                break;
+            case 1:
+                score+= 40*level;
+                break;
+            case 2:
+                score+= 100*level;
+                break;
+            case 3:
+                score+= 300*level;
+                break;
+            case 4:
+                score+= 1200*level;
+                break;
+        }
+
 
         //Fin
         reset=false;
@@ -216,4 +249,6 @@ int main()
         }
         SDL_UpdateWindowSurface(window);
     }
+    std::cout << score << std::endl;
+    std::cout << level << std::endl;
 }
