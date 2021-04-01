@@ -1,69 +1,65 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include<iostream>
-#include<SDL2/SDL.h>
-
 #include "timer.h"
 
 
 /*************************************** TIMER ***************************************/
 
-Timer* Timer::Temps = NULL;
+Timer* Timer::sInstance = NULL;
 
-Timer* Timer::sTemps {
+Timer* Timer::Instance() {
     
-    if ( Temps == NULL ) {
-        Temps = new Timer();
+    if ( sInstance == NULL ) {
+        sInstance = new Timer();
     }
 
-    return Temps;
+    return sInstance;
 }
 
 void Timer::Release() {
 
-    delete Temps;
-    sTemps = NULL;
+    delete sInstance;
+    sInstance = NULL;
 
 }
 
 Timer::Timer() {
 
+    Reset();
+    mTimeScale = 1.0f;
 }
 
 Timer::~Timer() {
 
-    Reset();
-    EchelleDeTemps = 1.0f;
+    
 }
 
 void Timer::Reset() {
 
-    HeureDebut = SDL_GetTicks(); // retourne le temps en millisecondes
-    TempsEcoule = 0.0;
-    TempsDelta = 0.0f;
+    mStartTicks = SDL_GetTicks();
+    mElapsedTicks = 0.0;
+    mDeltaTime = 0.0f;
 }
 
-float Timer::sTempsDelta() {
+float Timer::DeltaTime() {
 
-    return TempsDelta;
-
-}
-
-float Timer::sTempsEcoule(float t) {
-
-    TempsEcoule = t ;
+    return mDeltaTime;
 
 }
 
-void Timer::sTempsEcoule() {
+void Timer::TimeScale(float t) {
 
-    return TempsEcoule;
+    mTimeScale = t;
+
+}
+
+float Timer::TimeScale() {
+
+    return mTimeScale;
 
 }
 
 void Timer::Update() {
 
-    TempsEcoule = SDL_GetTicks() - HeureDebut;
-    TempsDelta = TempsEcoule * 0.001f;
+    mElapsedTicks = SDL_GetTicks() - mStartTicks;
+    mDeltaTime = mElapsedTicks * 0.001f;
 
 }

@@ -11,8 +11,6 @@
 #include<iostream>
 #include<SDL2/SDL.h>
 
-/* a premiere vue, je dirai qu'il faut une classe pour le plateau de jeu,
-une classe pour les blocs, et plein de fonction pour rendre tout ça dynamique*/
 const int SPEED=300;
 const int TILESIZE=32;
 

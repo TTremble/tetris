@@ -21,14 +21,6 @@ class Graphics {
         static void Release();
         static bool Initialized();
         void ShowGame(SDL_Surface* image, SDL_Surface* windowSurf);
-        
-        SDL_Texture* LoadTexture(std::string path);
-        SDL_Texture* CreateTextTexture(TTF_Font* font, std::string text, SDL_Color color);
-		void ClearBackBuffer();
-		void DrawTexture(SDL_Texture* tex, SDL_Rect* clip = NULL, SDL_Rect* rend = NULL, float angle = 0.0f, SDL_RendererFlip flip = SDL_FLIP_NONE);
-
-
-//        void Render();
 
     private :
 
@@ -36,7 +28,6 @@ class Graphics {
         static bool sInitialized;
 
         SDL_Window* mWindow;
-//		SDL_Renderer* mRenderer;
 
         Graphics();
         ~Graphics();
