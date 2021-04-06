@@ -8,8 +8,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include<iostream>
-#include<SDL2/SDL.h>
+#include <iostream>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
+#include <SDL2/SDL_image.h>
 
 
 const int SPEED=300;
@@ -162,6 +164,22 @@ int main()
     int colorNum=1;
     bool reset=true;
     unsigned int delay=0;
+
+    // declaration des paramètres pour les textes 
+
+    TTF_Font *police = NULL;
+    SDL_Color couleurBlanche = {255,255,255};
+    SDL_Surface *texte = NULL;
+
+    if ( TTF_Init() == -1)
+    {
+        fprintf(stderr, "Erreur d'initialisation de TTF_Init : %s\n", TTF_GetError());
+        exit(EXIT_FAILURE);
+    }
+
+    police = TTF_OpenFont("SilverMedal.ttf", 25);
+    texte = TTF_RenderText_Blended(police, "Next Block", couleurBlanche);
+
     //Ecrire un truc ici
     while(keep_window_open)
     {
@@ -215,7 +233,9 @@ int main()
                     hold2=true;
                 }
             }
-        }
+        }       
+
+        // pour afifhcer le plateau et les autres éléments du jeu
         SDL_BlitSurface(image, NULL, window_surface, NULL);
         SDL_Rect Joueur2 = {24*TILESIZE,0,12*TILESIZE,22*TILESIZE};
         SDL_BlitSurface(image,NULL, window_surface, &Joueur2);
@@ -227,6 +247,15 @@ int main()
         SDL_BlitSurface(cadre,NULL,window_surface,&CADRE2);
         SDL_BlitSurface(cadre,NULL,window_surface,&CADRE3);
         SDL_BlitSurface(cadre,NULL,window_surface,&CADRE4);
+
+         // pour écrire les informations sur le panneau d'affichage       
+
+        SDL_Rect position;
+        position.x = 12;
+        position.y = 12;
+
+        SDL_BlitSurface(texte, NULL, window_surface, &position);
+        
         //Movement
         for(int i=0;i<4;i++){
             b[i]=a[i];
@@ -543,4 +572,12 @@ int main()
     std::cout << "level=" << level << std::endl;
     std::cout << "score2=" << score2 << std::endl;
     std::cout << "level2=" << level2 << std::endl;
+
+    TTF_CloseFont(police);
+    TTF_Quit();
+
+    SDL_FreeSurface(texte);
+    SDL_Quit();
+
+    return 0;
 }
