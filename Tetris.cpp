@@ -12,13 +12,10 @@
 #include<SDL2/SDL.h>
 
 
-const int SPEED=300;
 const int TILESIZE=32;
 
 const int M=20;
 const int N=10;
-int field[M][N]={0};
-int field2[M][N]={0};
 
 // COULEURS
 const int ROUGE=1;
@@ -45,7 +42,7 @@ SDL_Rect tab[9]= {TILE_ROUGE,TILE_BLEU,TILE_ORANGE,TILE_JAUNE,TILE_VIOLET,TILE_C
 
 struct point{
     int x,y;
-} a[4], b[4], a2[4], b2[4];
+};
 
 struct shape{
     int couleur;
@@ -66,59 +63,239 @@ shape blocks[9]={
     {BLANC,TILE_BLANC,{1,2,3,4},5,4} //Utile uniquement pour la couleur
 };
 
-bool check(){
-    for(int i=0;i<4;i++){
-        if(a[i].x>=N||a[i].x<0||a[i].y==M){
-            return false;
-        }
-        if(field[a[i].y][a[i].x]!=0){
-            return false;
-        }
-    }
-    return true;
-}
+class Tetris{
+    public:
+        point a[4];
+        point b[4];
+        int field[M][N]={0};
+        int score=0;
+        int lcount=0;
+        int level=1;
+        int SPEED=300;
+        int tps_prec=0;
+        int next=rand()%7;
+        int n=rand()%7;
+        int dx=0;
+        bool space=false;
+        bool rotate=false;
+        bool hold=false;
+        int held=-1;
+        bool used=false;
+        bool gameover=false;
 
-bool check2(){
-    for(int i=0;i<4;i++){
-        if(a2[i].x>=N||a2[i].x<0||a2[i].y==M){
-            return false;
+        bool check(){
+            for(int i=0;i<4;i++){
+                if(a[i].x>=N||a[i].x<0||a[i].y==M){
+                    return false;
+                }
+                if(field[a[i].y][a[i].x]!=0){
+                    return false;
+                }
+            }
+            return true;
         }
-        if(field2[a2[i].y][a2[i].x]!=0){
-            return false;
-        }
-    }
-    return true;
-}
 
-void give_player1(int mult){
-    for(int i=0;i<M-mult;i++){
-        for(int j=0;j<N;j++){
-            field[i][j]=field[i+mult][j];
+        void give_line(int mult){
+            for(int i=0;i<M-mult;i++){
+                for(int j=0;j<N;j++){
+                    field[i][j]=field[i+mult][j];
+                }
+            }
+            int except=rand()%9;
+            for(int i=0;i<mult;i++){
+                for(int j=0;j<N;j++){
+                    field[M-i-1][j]=9;
+                    field[M-i-1][except]=0;
+                }
+            }
         }
-    }
-    int except=rand()%9;
-    for(int i=0;i<mult;i++){
-        for(int j=0;j<N;j++){
-            field[M-i-1][j]=9;
-            field[M-i-1][except]=0;
-        }
-    }
-}
 
-void give_player2(int mult){
-    for(int i=0;i<M-mult;i++){
-        for(int j=0;j<N;j++){
-            field2[i][j]=field2[i+mult][j];
+        void Horizontal(){
+            for(int i=0;i<4;i++){
+                b[i]=a[i];
+                a[i].x+=dx;
+            }
+            if(!check()){
+                Cancel();
+            }
         }
-    }
-    int except=rand()%9;
-    for(int i=0;i<mult;i++){
-        for(int j=0;j<N;j++){
-            field2[M-i-1][j]=9;
-            field2[M-i-1][except]=0;
+
+        void Cancel(){
+            for(int i=0;i<4;i++){
+                a[i]=b[i];
+            }
         }
-    }
-}
+
+        void Tourner(){
+            if(rotate){
+                point p=a[1]; //Centre de rotation
+                for (int i=0;i<4;i++){
+                    b[i]=a[i];
+                    int x=a[i].y-p.y;
+                    int y=a[i].x-p.x;
+                    a[i].x = p.x-x;
+                    a[i].y = p.y+y;
+                }
+                if(!check()){
+                    Cancel();
+                }
+            }
+        }
+
+        void Creer(){
+            for(int i=0;i<4;i++){
+                a[i].x = blocks[n].cases[i]%2 + N/2 -1;
+                a[i].y = blocks[n].cases[i]/2 -1;
+            }
+        }
+
+        void Instant(){
+            if(space){
+                int diff=100;
+                for(int i=0;i<4;i++){
+                    int j=a[i].y;
+                    while(j!=M&&field[j][a[i].x]==0){
+                        j++;
+                    }
+                    if(j-a[i].y<diff){
+                        diff=j-a[i].y;
+                    }
+                }
+                for(int i=0;i<4;i++){
+                    a[i].y=a[i].y+diff-1;
+                }
+            }
+        }
+
+        void Hold(){
+            if(hold&&!used){
+                if(held==-1){
+                    held=n;
+                    n=next;
+                    next=rand()%7;
+                }
+                else{
+                    int t=held;
+                    held=n;
+                    n=t;
+                }
+                Creer();
+                used=true;
+            }
+        }
+
+        void Avancer(int tps_actuel){
+            if(tps_actuel-tps_prec>SPEED){
+                for(int i=0;i<4;i++){
+                    b[i]=a[i];
+                    a[i].y++;
+                }
+                tps_prec=tps_actuel;
+                if(!check()){
+                    std::cout << "check pose" << std::endl;
+                    for(int i=0;i<4;i++){
+                        field[b[i].y][b[i].x]=blocks[n].couleur;
+                    }
+                    used=false;
+                    n=next;
+                    next=rand()%7;
+                    for(int i=0;i<4;i++){
+                        if(b[i].y<1){
+                            gameover=true;
+                        }
+                        Creer();
+                    }
+                }
+            }
+        }
+
+        void Draw_field(SDL_Surface* tiles, SDL_Surface* window_surface, int offset){
+            for(int i =0;i<M;i++){
+                for(int j=0;j<N;j++){
+                    if(field[i][j]!=0){
+                        SDL_Rect PLACE = {(j+1+offset)*TILESIZE,(i+1)*TILESIZE,TILESIZE,TILESIZE};
+                        SDL_BlitSurface(tiles,&tab[field[i][j]-1],window_surface,&PLACE);
+                    }
+                }
+            }
+        }
+
+
+        int Check_lines(){
+            int k=M-1;
+            int mult=0;
+
+            for(int i=M-1;i>0;i--){
+                int count=0;
+                for(int j=0;j<N;j++){
+                    if(field[i][j]){
+                        count++;
+                    }
+                    field[k][j]=field[i][j];
+                }
+                if(count<N){
+                    k--;
+                }
+                else{
+                    mult++;
+                    lcount++;
+                }
+            }
+
+            if(lcount>10){
+                level++;
+                lcount=lcount-10;
+            }
+
+            switch(mult){
+                case 0:
+                    break;
+                case 1:
+                    score+= 40*level;
+                    break;
+                case 2:
+                    score+= 100*level;
+                    break;
+                case 3:
+                    score+= 300*level;
+                    break;
+                case 4:
+                    score+= 1200*level;
+                    break;
+            }
+
+            return mult;
+        }
+
+        void New_Frame(int speed_ini){
+            SPEED=speed_ini;
+            dx=0;
+            rotate=0;
+            space=0;
+            hold=0;
+        }
+
+        void Draw_Piece(SDL_Surface* tiles, SDL_Surface* window_surface, int offset){
+            for(int i=0;i<4;i++){
+                SDL_Rect POS = {(a[i].x+1+offset)*TILESIZE,(a[i].y)*TILESIZE,TILESIZE,TILESIZE};
+                SDL_BlitSurface(tiles,&blocks[n].sprite,window_surface,&POS);
+            }
+        }
+
+        void Draw_Next_Hold(SDL_Surface* tiles, SDL_Surface* window_surface, int offset){
+            for(int i=0;i<4;i++){
+                SDL_Rect NEXTPOS = {(offset+14+blocks[next].cases[i]%2)*TILESIZE,(4+blocks[next].cases[i]/2)*TILESIZE,TILESIZE,TILESIZE};
+                SDL_BlitSurface(tiles,&blocks[next].sprite,window_surface,&NEXTPOS);
+            }
+            if(held!=-1){
+                for(int i=0;i<4;i++){
+                    SDL_Rect HELDPOS = {(offset+14+blocks[held].cases[i]%2)*TILESIZE,(13+blocks[held].cases[i]/2)*TILESIZE,TILESIZE,TILESIZE};
+                    SDL_BlitSurface(tiles,&blocks[held].sprite,window_surface,&HELDPOS);
+                }
+            }
+        };
+};
+
 
 int main()
 {
@@ -130,38 +307,11 @@ int main()
     SDL_Surface *cadre = SDL_LoadBMP("cadre.bmp");
     SDL_Surface *window_surface = SDL_GetWindowSurface(window);
     //Quelques variables
-    int score=0;
-    int score2=0;
-    int counter=0;
-    int lcount=0;
-    int lcount2=0;
-    int level=1;
-    int level2=1;
-    int SPEED=1000;
-    int SPEED2=1000;
-    int speed_ini=SPEED;
     int tps_actuel=0;
-    int tps_prec=0;
-    int tps_prec2=0;
-    int next=rand()%7;
-    int n=rand()%7;
-    int next2=rand()%7;
-    int n2=rand()%7;
-    int dx=0;
-    int dx2=0;
-    bool space=false;
-    bool space2=false;
-    bool rotate=false;
-    bool rotate2=false;
-    bool hold=false;
-    bool hold2=false;
-    int held=-1;
-    int held2=-1;
-    bool used=false;
-    bool used2=false;
-    int colorNum=1;
-    bool reset=true;
-    unsigned int delay=0;
+    int speed_ini=300;
+    bool start=true;
+    Tetris T1;
+    Tetris T2;
     //Ecrire un truc ici
     while(keep_window_open)
     {
@@ -179,40 +329,40 @@ int main()
             //Key presses
             if(e.type==SDL_KEYDOWN){
                 if(e.key.keysym.sym==SDLK_LEFT){
-                    dx=-1;
+                    T1.dx=-1;
                 }
                 else if(e.key.keysym.sym==SDLK_RIGHT){
-                    dx=+1;
+                    T1.dx=+1;
                 }
                 else if(e.key.keysym.sym==SDLK_UP){
-                    rotate=true;
+                    T1.rotate=true;
                 }
                 else if(e.key.keysym.sym==SDLK_DOWN){
-                    SPEED=SPEED/10;
+                    T1.SPEED=T1.SPEED/10;
                 }
                 else if(e.key.keysym.sym==SDLK_SPACE){
-                    space=true;
+                    T1.space=true;
                 }
                 else if(e.key.keysym.sym==SDLK_c){
-                    hold=true;
+                    T1.hold=true;
                 }
                 if(e.key.keysym.sym==SDLK_q){
-                    dx2=-1;
+                    T2.dx=-1;
                 }
                 else if(e.key.keysym.sym==SDLK_d){
-                    dx2=+1;
+                    T2.dx=+1;
                 }
                 else if(e.key.keysym.sym==SDLK_z){
-                    rotate2=true;
+                    T2.rotate=true;
                 }
                 else if(e.key.keysym.sym==SDLK_s){
-                    SPEED2=SPEED2/10;
+                    T2.SPEED=T2.SPEED/10;
                 }
                 else if(e.key.keysym.sym==SDLK_a){
-                    space2=true;
+                    T2.space=true;
                 }
                 else if(e.key.keysym.sym==SDLK_e){
-                    hold2=true;
+                    T2.hold=true;
                 }
             }
         }
@@ -227,320 +377,74 @@ int main()
         SDL_BlitSurface(cadre,NULL,window_surface,&CADRE2);
         SDL_BlitSurface(cadre,NULL,window_surface,&CADRE3);
         SDL_BlitSurface(cadre,NULL,window_surface,&CADRE4);
+        //Ini
+        if(start){
+            T1.Creer();
+            T2.Creer();
+        }
         //Movement
-        for(int i=0;i<4;i++){
-            b[i]=a[i];
-            a[i].x +=dx;
-            b2[i]=a2[i];
-            a2[i].x +=dx2;
+        if(!T1.gameover){
+            T1.Horizontal();
         }
-        if(!check()){
-            for(int i=0;i<4;i++){
-                a[i]=b[i];
-            }
-        }
-        if(!check2()){
-            for(int i=0;i<4;i++){
-                a2[i]=b2[i];
-            }
+        if(!T2.gameover){
+            T2.Horizontal();
         }
         //Rotation
-        if(rotate){
-            point p= a[1]; //Centre de rotation
-            for (int i=0;i<4;i++){
-                b[i]=a[i];
-                int x=a[i].y-p.y;
-                int y=a[i].x-p.x;
-                a[i].x = p.x-x;
-                a[i].y = p.y+y;
-            }
+        if(!T1.gameover){
+        T1.Tourner();
         }
-        if(!check()){
-            for(int i=0;i<4;i++){
-                a[i]=b[i];
-            }
-        }
-        if(rotate2){
-            point p= a2[1]; //Centre de rotation
-            for (int i=0;i<4;i++){
-                b2[i]=a2[i];
-                int x=a2[i].y-p.y;
-                int y=a2[i].x-p.x;
-                a2[i].x = p.x-x;
-                a2[i].y = p.y+y;
-            }
-        }
-        if(!check2()){
-            for(int i=0;i<4;i++){
-                a2[i]=b2[i];
-            }
-        }
-        //Ini
-        if(reset){
-            for(int i=0;i<4;i++){
-                a[i].x = blocks[n].cases[i]%2 + N/2 -1;
-                a[i].y = blocks[n].cases[i]/2 -1;
-                a2[i].x = blocks[n2].cases[i]%2 + N/2 -1;
-                a2[i].y = blocks[n2].cases[i]/2 -1;
-            }
+        if(!T2.gameover){
+        T2.Tourner();
         }
         //Aterrissage
-        if(space){
-            int diff=100;
-            for(int i=0;i<4;i++){
-                int j=a[i].y;
-                while(j!=M&&field[j][a[i].x]==0){
-                    j++;
-                }
-                if(j-a[i].y<diff){
-                    diff=j-a[i].y;
-                }
-            }
-            for(int i=0;i<4;i++){
-                a[i].y=a[i].y+diff-1;
-            }
+        if(!T1.gameover){
+        T1.Instant();
         }
-        if(space2){
-            int diff=100;
-            for(int i=0;i<4;i++){
-                int j=a2[i].y;
-                while(j!=M&&field2[j][a2[i].x]==0){
-                    j++;
-                }
-                if(j-a2[i].y<diff){
-                    diff=j-a2[i].y;
-                }
-            }
-            for(int i=0;i<4;i++){
-                a2[i].y=a2[i].y+diff-1;
-            }
+        if(!T2.gameover){
+        T2.Instant();
         }
         //Hold
-        if(hold&&!used){
-            if(held==-1){
-                held=n;
-                n=next;
-                next=rand()%7;
-            }
-            else{
-                int t=held;
-                held=n;
-                n=t;
-            }
-            for (int i=0;i<4;i++){
-                    a[i].x = blocks[n].cases[i]%2 + N/2 -1;
-                    a[i].y = blocks[n].cases[i]/2-1;
-                }
-            used=true;
+        if(!T1.gameover){
+        T1.Hold();
         }
-        if(hold2&&!used2){
-            if(held2==-1){
-                held2=n2;
-                n2=next2;
-                next2=rand()%7;
-            }
-            else{
-                int t2=held2;
-                held2=n2;
-                n2=t2;
-            }
-            for (int i=0;i<4;i++){
-                    a2[i].x = blocks[n2].cases[i]%2 + N/2 -1;
-                    a2[i].y = blocks[n2].cases[i]/2-1;
-                }
-            used2=true;
+        if(!T2.gameover){
+        T2.Hold();
         }
         //Avancée
         tps_actuel=SDL_GetTicks();
-        if(tps_actuel-tps_prec>SPEED){
-            for(int i=0;i<4;i++){
-                b[i]=a[i];
-                a[i].y++;
-            }
-            tps_prec=tps_actuel;
-            if(!check()){
-                for(int i=0;i<4;i++){
-                    field[b[i].y][b[i].x]=blocks[n].couleur;
-                }
-                used=false;
-                n=next;
-                next=rand()%7;
-                for(int i=0;i<4;i++){
-                    if(a[i].y<2){
-                        keep_window_open=false;
-                    }
-                    a[i].x = blocks[n].cases[i]%2 + N/2 -1;
-                    a[i].y = blocks[n].cases[i]/2-1;
-                }
-            }
+        if(!T1.gameover){
+        T1.Avancer(tps_actuel);
         }
         tps_actuel=SDL_GetTicks();
-        if(tps_actuel-tps_prec2>SPEED2){
-            for(int i=0;i<4;i++){
-                b2[i]=a2[i];
-                a2[i].y++;
-            }
-            tps_prec2=tps_actuel;
-            if(!check2()){
-                for(int i=0;i<4;i++){
-                    field2[b2[i].y][b2[i].x]=blocks[n2].couleur;
-                }
-                used2=false;
-                n2=next2;
-                next2=rand()%7;
-                for(int i=0;i<4;i++){
-                    if(a2[i].y<2){
-                        keep_window_open=false;
-                    }
-                    a2[i].x = blocks[n2].cases[i]%2 + N/2 -1;
-                    a2[i].y = blocks[n2].cases[i]/2-1;
-                }
-            }
+        if(!T2.gameover){
+        T2.Avancer(tps_actuel);
         }
         //Accélération
         if(SDL_GetTicks()%5000==0){
             speed_ini+=-1;
         }
-        //Draw
-        for(int i =0;i<M;i++){
-            for(int j=0;j<N;j++){
-                if(field[i][j]!=0){
-                    SDL_Rect PLACE = {(j+1)*TILESIZE,(i+1)*TILESIZE,TILESIZE,TILESIZE};
-                    SDL_BlitSurface(tiles,&tab[field[i][j]-1],window_surface,&PLACE);
-                }
-                if(field2[i][j]!=0){
-                    SDL_Rect PLACE2 = {(j+25)*TILESIZE,(i+1)*TILESIZE,TILESIZE,TILESIZE};
-                    SDL_BlitSurface(tiles,&tab[field2[i][j]-1],window_surface,&PLACE2);
-                }
-            }
-        }
         //Check Lines
-        //Player 1
-        int k=M-1;
-        int mult=0;
-        for(int i=M-1;i>0;i--){
-            int count=0;
-            for(int j=0;j<N;j++){
-                if(field[i][j]){
-                    count++;
-                }
-                field[k][j]=field[i][j];
-            }
-            if(count<N){
-                k--;
-            }
-            else{
-                mult++;
-                lcount++;
-            }
+        if(!T1.gameover){
+        T2.give_line(T1.Check_lines());
         }
-
-        if(lcount>10){
-            level++;
-            lcount=lcount-10;
+        if(!T2.gameover){
+        T1.give_line(T2.Check_lines());
         }
-
-        switch(mult){
-            case 0:
-                break;
-            case 1:
-                score+= 40*level;
-                break;
-            case 2:
-                score+= 100*level;
-                break;
-            case 3:
-                score+= 300*level;
-                break;
-            case 4:
-                score+= 1200*level;
-                break;
-        }
-        give_player2(mult);
-        //Player 2
-        int k2=M-1;
-        int mult2=0;
-        for(int i=M-1;i>0;i--){
-            int count=0;
-            for(int j=0;j<N;j++){
-                if(field2[i][j]){
-                    count++;
-                }
-                field2[k2][j]=field2[i][j];
-            }
-            if(count<N){
-                k2--;
-            }
-            else{
-                mult2++;
-                lcount2++;
-            }
-        }
-
-        if(lcount2>10){
-            level2++;
-            lcount2=lcount2-10;
-        }
-
-        switch(mult2){
-            case 0:
-                break;
-            case 1:
-                score2+= 40*level;
-                break;
-            case 2:
-                score2+= 100*level;
-                break;
-            case 3:
-                score2+= 300*level;
-                break;
-            case 4:
-                score2+= 1200*level;
-                break;
-        }
-        give_player1(mult2);
-
-
         //Fin
-        reset=false;
-        SPEED=speed_ini;
-        SPEED2=speed_ini;
-        dx=0;
-        dx2=0;
-        rotate=0;
-        rotate2=0;
-        space=0;
-        space2=0;
-        hold=0;
-        hold2=0;
-        for(int i=0;i<4;i++){
-            SDL_Rect POS = {(a[i].x+1)*TILESIZE,(a[i].y)*TILESIZE,TILESIZE,TILESIZE};
-            SDL_BlitSurface(tiles,&blocks[n].sprite,window_surface,&POS);
-            SDL_Rect POS2 = {(a2[i].x+25)*TILESIZE,(a2[i].y)*TILESIZE,TILESIZE,TILESIZE};
-            SDL_BlitSurface(tiles,&blocks[n2].sprite,window_surface,&POS2);
+        start=false;
+        if(!T1.gameover){
+        T1.New_Frame(speed_ini);
         }
-        for(int i=0;i<4;i++){
-            SDL_Rect NEXTPOS = {(14+blocks[next].cases[i]%2)*TILESIZE,(4+blocks[next].cases[i]/2)*TILESIZE,TILESIZE,TILESIZE};
-            SDL_BlitSurface(tiles,&blocks[next].sprite,window_surface,&NEXTPOS);
-            SDL_Rect NEXTPOS2 = {(20+blocks[next2].cases[i]%2)*TILESIZE,(4+blocks[next2].cases[i]/2)*TILESIZE,TILESIZE,TILESIZE};
-            SDL_BlitSurface(tiles,&blocks[next2].sprite,window_surface,&NEXTPOS2);
+        if(!T2.gameover){
+        T2.New_Frame(speed_ini);
         }
-        if(held!=-1){
-            for(int i=0;i<4;i++){
-                SDL_Rect HELDPOS = {(14+blocks[held].cases[i]%2)*TILESIZE,(13+blocks[held].cases[i]/2)*TILESIZE,TILESIZE,TILESIZE};
-                SDL_BlitSurface(tiles,&blocks[held].sprite,window_surface,&HELDPOS);
-            }
-        }
-        if(held2!=-1){
-            for(int i=0;i<4;i++){
-                SDL_Rect HELDPOS2 = {(20+blocks[held2].cases[i]%2)*TILESIZE,(13+blocks[held2].cases[i]/2)*TILESIZE,TILESIZE,TILESIZE};
-                SDL_BlitSurface(tiles,&blocks[held2].sprite,window_surface,&HELDPOS2);
-            }
-        }
+        //Draw
+        T1.Draw_field(tiles,window_surface,0);
+        T2.Draw_field(tiles,window_surface,24);
+        T1.Draw_Piece(tiles,window_surface,0);
+        T2.Draw_Piece(tiles,window_surface,24);
+        T1.Draw_Next_Hold(tiles,window_surface,0);
+        T2.Draw_Next_Hold(tiles,window_surface,6);
         SDL_UpdateWindowSurface(window);
     }
-    std::cout << "score=" << score << std::endl;
-    std::cout << "level=" << level << std::endl;
-    std::cout << "score2=" << score2 << std::endl;
-    std::cout << "level2=" << level2 << std::endl;
 }
