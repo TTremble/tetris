@@ -299,224 +299,431 @@ class Tetris{
 };
 
 
-int main()
+void run() 
 {
-    //Initialisation de la fenêtre de jeu
-    SDL_Window *window=SDL_CreateWindow("Tetris",SDL_WINDOWPOS_CENTERED,SDL_WINDOWPOS_CENTERED,1152,736,0);
-    bool keep_window_open = true;
-    SDL_Surface *image = SDL_LoadBMP("image.bmp");
-    SDL_Surface *tiles = SDL_LoadBMP("Tiles.bmp");
-    SDL_Surface *cadre = SDL_LoadBMP("cadre.bmp");
-    SDL_Surface *window_surface = SDL_GetWindowSurface(window);
-
-    // declaration des paramètres pour les textes 
-
-    TTF_Font *police_nh = NULL, * police_score = NULL;
-    SDL_Color couleurPolice = {168,168,168};
-    SDL_Surface *text_next = NULL, *text_hold = NULL, *text_score1 = NULL, *text_score2 = NULL, *text_lvl1 = NULL, * text_lvl2 = NULL;
-    SDL_Surface *text_l1 = NULL, *text_l2 = NULL, *text_sc1 = NULL, *text_sc2 = NULL;
-
+    
     if ( TTF_Init() == -1)
     {
         fprintf(stderr, "Erreur d'initialisation de TTF_Init : %s\n", TTF_GetError());
         exit(EXIT_FAILURE);
     }
 
+    SDL_Window *window = SDL_CreateWindow("Menu Tetris",SDL_WINDOWPOS_CENTERED,SDL_WINDOWPOS_CENTERED,1152,736,0);
+    bool menu_open = true;
+    SDL_Surface *image = SDL_LoadBMP("image.bmp");
+    SDL_Surface *tiles = SDL_LoadBMP("Tiles.bmp");
+    SDL_Surface *cadre = SDL_LoadBMP("cadre.bmp");
+    SDL_Surface *window_surface = SDL_GetWindowSurface(window);
+
+    TTF_Font *police_nh = NULL, * police_score = NULL;
+    SDL_Color couleurPolice = {168,168,168};
+    SDL_Surface *text_menu = NULL, *text1J = NULL, *text2J = NULL, *text_vsAI = NULL, *text_quit = NULL;
+
     police_nh = TTF_OpenFont("SilverMedal.ttf", 42);
-    text_next = TTF_RenderText_Solid(police_nh, "NEXT BLOCK", couleurPolice);
-    text_hold = TTF_RenderText_Solid(police_nh, "HOLD", couleurPolice);
+    text_menu = TTF_RenderText_Solid(police_nh, "MENU", couleurPolice);
+    text1J = TTF_RenderText_Solid(police_nh,    "MODE 1 JOUEUR      1", couleurPolice);
+    text2J = TTF_RenderText_Solid(police_nh,    "MODE 2 JOUEURS  2", couleurPolice);
+    text_vsAI = TTF_RenderText_Solid(police_nh, "MODE VS IA                3", couleurPolice);
+    text_quit = TTF_RenderText_Solid(police_nh, "QUIT                                  Q", couleurPolice);
 
-    police_score = TTF_OpenFont("SilverMedal.ttf", 20);
-    text_score1 = TTF_RenderText_Solid(police_score, "SCORE", couleurPolice);
-    text_score2 = TTF_RenderText_Solid(police_score, "SCORE", couleurPolice);
-    text_lvl1 = TTF_RenderText_Solid(police_score, "LEVEL", couleurPolice);
-    text_lvl2 = TTF_RenderText_Solid(police_score, "LEVEL", couleurPolice);
+    SDL_Rect positionMenu = {16*TILESIZE,1*TILESIZE,6*TILESIZE,6*TILESIZE};
+    SDL_Rect position1J = {10*TILESIZE,7*TILESIZE,6*TILESIZE,6*TILESIZE};
+    SDL_Rect position2J = {10*TILESIZE,10*TILESIZE,6*TILESIZE,6*TILESIZE};
+    SDL_Rect positionVSAI = {10*TILESIZE,13*TILESIZE,6*TILESIZE,6*TILESIZE};
+    SDL_Rect positionQuit = {10*TILESIZE,16*TILESIZE,6*TILESIZE,6*TILESIZE};
 
-    const char * sc1;
-    const char * sc2;
-    const char * l1;
-    const char * l2;
 
-    //Quelques variables
-    int tps_actuel=0;
-    int speed_ini=300;
-    bool start=true;
-    Tetris T1;
-    Tetris T2;
-    //Ecrire un truc ici
-    while(keep_window_open)
+    
+    while(menu_open)
     {
-
-        std::string S1 = std::to_string(T1.score);
-        sc1 = S1.c_str();
-        std::string S2 = std::to_string(T2.score);
-        sc2 = S2.c_str();
-        std::string L1 = std::to_string(T1.level);
-        l1 = L1.c_str();
-        std::string L2 = std::to_string(T2.level);
-        l2 = L2.c_str();
-
-        text_sc1 = TTF_RenderText_Solid(police_score, sc1, couleurPolice);
-        text_sc2 = TTF_RenderText_Solid(police_score, sc2, couleurPolice);
-        text_l1 = TTF_RenderText_Solid(police_score, l1, couleurPolice);
-        text_l2 = TTF_RenderText_Solid(police_score, l2, couleurPolice);
-
         SDL_FillRect(window_surface, NULL, 0x000000);
-        //Events
-        SDL_Event e;
-        while(SDL_PollEvent(&e) > 0)
+        SDL_BlitSurface(text_menu, NULL, window_surface, &positionMenu);
+        SDL_BlitSurface(text1J, NULL, window_surface, &position1J);
+        SDL_BlitSurface(text2J, NULL, window_surface, &position2J);
+        SDL_BlitSurface(text_vsAI, NULL, window_surface, &positionVSAI);
+        SDL_BlitSurface(text_quit, NULL, window_surface, &positionQuit);
+
+        SDL_BlitSurface(cadre, NULL, window_surface, NULL); 
+        
+        SDL_Event event;
+
+        bool actif = false, actif2 = false;
+
+        while(SDL_PollEvent(&event) > 0)
         {
             //closing window
-            switch(e.type){
+            switch(event.type){
                 case SDL_QUIT:
-                    keep_window_open=false;
+                    menu_open = false;
+                    actif = false;
+                    actif2 = false;
                     break;
             }
             //Key presses
-            if(e.type==SDL_KEYDOWN){
-                if(e.key.keysym.sym==SDLK_LEFT){
-                    T1.dx=-1;
+            if(event.type==SDL_KEYDOWN){
+                if(event.key.keysym.sym==SDLK_2){
+                    actif = true;
                 }
-                else if(e.key.keysym.sym==SDLK_RIGHT){
-                    T1.dx=+1;
+                else if(event.key.keysym.sym==SDLK_q){
+                    menu_open = false;
                 }
-                else if(e.key.keysym.sym==SDLK_UP){
-                    T1.rotate=true;
+                else if(event.key.keysym.sym==SDLK_1){
+                    actif2 = true;
                 }
-                else if(e.key.keysym.sym==SDLK_DOWN){
-                    T1.SPEED=T1.SPEED/10;
-                }
-                else if(e.key.keysym.sym==SDLK_SPACE){
-                    T1.space=true;
-                }
-                else if(e.key.keysym.sym==SDLK_c){
-                    T1.hold=true;
-                }
-                if(e.key.keysym.sym==SDLK_q){
-                    T2.dx=-1;
-                }
-                else if(e.key.keysym.sym==SDLK_d){
-                    T2.dx=+1;
-                }
-                else if(e.key.keysym.sym==SDLK_z){
-                    T2.rotate=true;
-                }
-                else if(e.key.keysym.sym==SDLK_s){
-                    T2.SPEED=T2.SPEED/10;
-                }
-                else if(e.key.keysym.sym==SDLK_a){
-                    T2.space=true;
-                }
-                else if(e.key.keysym.sym==SDLK_e){
-                    T2.hold=true;
-                }
+                break;
             }
         }
-        SDL_BlitSurface(image, NULL, window_surface, NULL);
-        SDL_Rect Joueur2 = {24*TILESIZE,0,12*TILESIZE,22*TILESIZE};
-        SDL_BlitSurface(image,NULL, window_surface, &Joueur2);
-        SDL_Rect CADRE1 = {12*TILESIZE,3*TILESIZE,6*TILESIZE,6*TILESIZE};
-        SDL_Rect CADRE2 = {12*TILESIZE,12*TILESIZE,6*TILESIZE,6*TILESIZE};
-        SDL_Rect CADRE3 = {18*TILESIZE,3*TILESIZE,6*TILESIZE,6*TILESIZE};
-        SDL_Rect CADRE4 = {18*TILESIZE,12*TILESIZE,6*TILESIZE,6*TILESIZE};
-        SDL_BlitSurface(cadre,NULL,window_surface,&CADRE1);
-        SDL_BlitSurface(cadre,NULL,window_surface,&CADRE2);
-        SDL_BlitSurface(cadre,NULL,window_surface,&CADRE3);
-        SDL_BlitSurface(cadre,NULL,window_surface,&CADRE4);
+        while(actif2) {
 
-        // pour écrire les informations sur le panneau d'affichage       
-        //le hold
-        SDL_Rect position = {13*TILESIZE,1*TILESIZE,6*TILESIZE,6*TILESIZE};
-        SDL_BlitSurface(text_next, NULL, window_surface, &position);
-        //le next
-        SDL_Rect position2 = {16*TILESIZE,10*TILESIZE,6*TILESIZE,6*TILESIZE};
-        SDL_BlitSurface(text_hold, NULL, window_surface, &position2);
-        //les affichages des mots score et lvl
-        SDL_Rect positionScore1 = {13*TILESIZE,19*TILESIZE,6*TILESIZE,6*TILESIZE};
-        SDL_BlitSurface(text_score1, NULL, window_surface, &positionScore1);
-        SDL_Rect positionScore2 = {19*TILESIZE,19*TILESIZE,6*TILESIZE,6*TILESIZE};
-        SDL_BlitSurface(text_score2, NULL, window_surface, &positionScore2);
-        SDL_Rect positionLevel1 = {13*TILESIZE,20*TILESIZE,6*TILESIZE,6*TILESIZE};
-        SDL_BlitSurface(text_lvl1, NULL, window_surface, &positionLevel1);
-        SDL_Rect positionLevel2 = {19*TILESIZE,20*TILESIZE,6*TILESIZE,6*TILESIZE};
-        SDL_BlitSurface(text_lvl2, NULL, window_surface, &positionLevel2);
-        //les scores et lvl effectifs
-        SDL_Rect positionSc1 = {16*TILESIZE,19*TILESIZE,6*TILESIZE,6*TILESIZE};
-        SDL_BlitSurface(text_sc1, NULL, window_surface, &positionSc1);
-        SDL_Rect positionSc2 = {22*TILESIZE,19*TILESIZE,6*TILESIZE,6*TILESIZE};
-        SDL_BlitSurface(text_sc2, NULL, window_surface, &positionSc2);
-        SDL_Rect positionL1 = {16*TILESIZE,20*TILESIZE,6*TILESIZE,6*TILESIZE};
-        SDL_BlitSurface(text_l1, NULL, window_surface, &positionL1);
-        SDL_Rect positionL2 = {22*TILESIZE,20*TILESIZE,6*TILESIZE,6*TILESIZE};
-        SDL_BlitSurface(text_l2, NULL, window_surface, &positionL2);
-        //Ini
-        if(start){
-            T1.Creer();
-            T2.Creer();
+            TTF_Font *police_solo = NULL;
+
+            police_solo = TTF_OpenFont("SilverMedal.ttf", 25);
+
+            SDL_Surface *text_nxt = NULL, *text_hld = NULL, *text_score = NULL, *text_lvl = NULL;
+            SDL_Surface *text_l = NULL, *text_sc = NULL;
+
+            text_nxt = TTF_RenderText_Solid(police_solo, "NEXT BLOCK", couleurPolice);
+            text_hld = TTF_RenderText_Solid(police_solo, "HOLD", couleurPolice);
+
+            text_score = TTF_RenderText_Solid(police_solo, "SCORE", couleurPolice);
+            text_lvl = TTF_RenderText_Solid(police_solo, "LEVEL", couleurPolice);
+
+            const char * sc;
+            const char * l;
+
+            //Quelques variables
+            int tps_actuel=0;
+            int speed_ini=300;
+            bool start=true;
+            Tetris T;
+            
+            bool keep_window_open = true;
+
+            while(keep_window_open)
+            {
+                std::string S = std::to_string(T.score);
+                sc = S.c_str();
+                std::string L = std::to_string(T.level);
+                l = L.c_str();
+
+                text_sc = TTF_RenderText_Solid(police_solo, sc, couleurPolice);
+                text_l = TTF_RenderText_Solid(police_solo, l, couleurPolice);
+
+                SDL_FillRect(window_surface, NULL, 0x000000);
+                //Events
+                SDL_Event e;
+                while(SDL_PollEvent(&e) > 0)
+                {
+                    //closing window
+                    switch(e.type){
+                        case SDL_QUIT:
+                            menu_open = false;
+                            actif2 = false;
+                            keep_window_open=false;
+                            break;
+                    }
+                    //Key presses
+                    if(e.type==SDL_KEYDOWN){
+                        if(e.key.keysym.sym==SDLK_LEFT){
+                            T.dx=-1;
+                        }
+                        else if(e.key.keysym.sym==SDLK_RIGHT){
+                            T.dx=+1;
+                        }
+                        else if(e.key.keysym.sym==SDLK_UP){
+                            T.rotate=true;
+                        }
+                        else if(e.key.keysym.sym==SDLK_DOWN){
+                            T.SPEED=T.SPEED/10;
+                        }
+                        else if(e.key.keysym.sym==SDLK_SPACE){
+                            T.space=true;
+                        }
+                        else if(e.key.keysym.sym==SDLK_c){
+                            T.hold=true;
+                        }
+                    }
+                }
+                SDL_Rect Joueur = {12*TILESIZE,0,12*TILESIZE,22*TILESIZE};
+                SDL_BlitSurface(image, NULL, window_surface, &Joueur);
+                SDL_Rect CADRE1 = {24*TILESIZE,3*TILESIZE,6*TILESIZE,6*TILESIZE};
+                SDL_Rect CADRE2 = {24*TILESIZE,12*TILESIZE,6*TILESIZE,6*TILESIZE};
+                SDL_BlitSurface(cadre,NULL,window_surface,&CADRE1);
+                SDL_BlitSurface(cadre,NULL,window_surface,&CADRE2);
+
+                // pour écrire les informations sur le panneau d'affichage       
+                // le next
+                SDL_Rect position = {24*TILESIZE,1*TILESIZE,6*TILESIZE,6*TILESIZE};
+                SDL_BlitSurface(text_nxt, NULL, window_surface, &position);
+                // le hold
+                SDL_Rect position2 = {26*TILESIZE,10*TILESIZE,6*TILESIZE,6*TILESIZE};
+                SDL_BlitSurface(text_hld, NULL, window_surface, &position2);
+                //les affichages des mots score et lvl
+                SDL_Rect positionScore = {24*TILESIZE,19*TILESIZE,6*TILESIZE,6*TILESIZE};
+                SDL_BlitSurface(text_score, NULL, window_surface, &positionScore);
+                SDL_Rect positionLevel = {24*TILESIZE,20*TILESIZE,6*TILESIZE,6*TILESIZE};
+                SDL_BlitSurface(text_lvl, NULL, window_surface, &positionLevel);
+                //les scores et lvl effectifs
+                SDL_Rect positionSc = {28*TILESIZE,19*TILESIZE,6*TILESIZE,6*TILESIZE};
+                SDL_BlitSurface(text_sc, NULL, window_surface, &positionSc);
+                SDL_Rect positionL = {28*TILESIZE,20*TILESIZE,6*TILESIZE,6*TILESIZE};
+                SDL_BlitSurface(text_l, NULL, window_surface, &positionL);
+                //Ini
+                if(start){
+                    T.Creer();
+                }
+                //Movement
+                if(!T.gameover){
+                    T.Horizontal();
+                }
+                //Rotation
+                if(!T.gameover){
+                    T.Tourner();
+                }
+                //Aterrissage
+                if(!T.gameover){
+                    T.Instant();
+                }
+                //Hold
+                if(!T.gameover){
+                    T.Hold();
+                }
+                //Avancée
+                tps_actuel=SDL_GetTicks();
+                if(!T.gameover){
+                    T.Avancer(tps_actuel);
+                }
+                //Accélération
+                if(SDL_GetTicks()%5000==0){
+                    speed_ini+=-1;
+                }
+                //Check Lines
+                if(!T.gameover){
+                T.Check_lines();
+                }
+                //Fin
+                start=false;
+                if(!T.gameover){
+                    T.New_Frame(speed_ini);
+                }
+                //Draw
+                T.Draw_field(tiles,window_surface,12);
+                T.Draw_Piece(tiles,window_surface,12);
+                T.Draw_Next_Hold(tiles,window_surface,12);
+                SDL_UpdateWindowSurface(window);
+            }
+
         }
-        //Movement
-        if(!T1.gameover){
-            T1.Horizontal();
+        while(actif){
+
+            SDL_Surface *text_next = NULL, *text_hold = NULL, *text_score1 = NULL, *text_score2 = NULL, *text_lvl1 = NULL, * text_lvl2 = NULL;
+            SDL_Surface *text_l1 = NULL, *text_l2 = NULL, *text_sc1 = NULL, *text_sc2 = NULL;
+            
+            text_next = TTF_RenderText_Solid(police_nh, "NEXT BLOCK", couleurPolice);
+            text_hold = TTF_RenderText_Solid(police_nh, "HOLD", couleurPolice);
+
+            police_score = TTF_OpenFont("SilverMedal.ttf", 20);
+            text_score1 = TTF_RenderText_Solid(police_score, "SCORE", couleurPolice);
+            text_score2 = TTF_RenderText_Solid(police_score, "SCORE", couleurPolice);
+            text_lvl1 = TTF_RenderText_Solid(police_score, "LEVEL", couleurPolice);
+            text_lvl2 = TTF_RenderText_Solid(police_score, "LEVEL", couleurPolice);
+
+            const char * sc1;
+            const char * sc2;
+            const char * l1;
+            const char * l2;
+
+            //Quelques variables
+            int tps_actuel=0;
+            int speed_ini=300;
+            bool start=true;
+            Tetris T1;
+            Tetris T2;
+            
+            bool keep_window_open = true;
+
+            while(keep_window_open)
+            {
+                std::string S1 = std::to_string(T1.score);
+                sc1 = S1.c_str();
+                std::string S2 = std::to_string(T2.score);
+                sc2 = S2.c_str();
+                std::string L1 = std::to_string(T1.level);
+                l1 = L1.c_str();
+                std::string L2 = std::to_string(T2.level);
+                l2 = L2.c_str();
+
+                text_sc1 = TTF_RenderText_Solid(police_score, sc1, couleurPolice);
+                text_sc2 = TTF_RenderText_Solid(police_score, sc2, couleurPolice);
+                text_l1 = TTF_RenderText_Solid(police_score, l1, couleurPolice);
+                text_l2 = TTF_RenderText_Solid(police_score, l2, couleurPolice);
+
+                SDL_FillRect(window_surface, NULL, 0x000000);
+                //Events
+                SDL_Event e;
+                while(SDL_PollEvent(&e) > 0)
+                {
+                    //closing window
+                    switch(e.type){
+                        case SDL_QUIT:
+                            menu_open = false;
+                            actif = false;
+                            keep_window_open=false;
+                            break;
+                    }
+                    //Key presses
+                    if(e.type==SDL_KEYDOWN){
+                        if(e.key.keysym.sym==SDLK_q){ 
+                            T1.dx=-1;
+                        }
+                        else if(e.key.keysym.sym==SDLK_d){ 
+                            T1.dx=+1;
+                        }
+                        else if(e.key.keysym.sym==SDLK_z){ 
+                            T1.rotate=true;
+                        }
+                        else if(e.key.keysym.sym==SDLK_s){ 
+                            T1.SPEED=T1.SPEED/10;
+                        }
+                        else if(e.key.keysym.sym==SDLK_a){ 
+                            T1.space=true;
+                        }
+                        else if(e.key.keysym.sym==SDLK_e){ 
+                            T1.hold=true;
+                        }
+                        if(e.key.keysym.sym==SDLK_LEFT){ 
+                            T2.dx=-1;
+                        }
+                        else if(e.key.keysym.sym==SDLK_RIGHT){
+                            T2.dx=+1;
+                        }
+                        else if(e.key.keysym.sym==SDLK_UP){
+                            T2.rotate=true;
+                        }
+                        else if(e.key.keysym.sym==SDLK_DOWN){
+                            T2.SPEED=T2.SPEED/10;
+                        }
+                        else if(e.key.keysym.sym==SDLK_c){
+                            T2.space=true;
+                        }
+                        else if(e.key.keysym.sym==SDLK_SPACE){
+                            T2.hold=true;
+                        }
+                    }
+                }
+                SDL_BlitSurface(image, NULL, window_surface, NULL);
+                SDL_Rect Joueur2 = {24*TILESIZE,0,12*TILESIZE,22*TILESIZE};
+                SDL_BlitSurface(image,NULL, window_surface, &Joueur2);
+                SDL_Rect CADRE1 = {12*TILESIZE,3*TILESIZE,6*TILESIZE,6*TILESIZE};
+                SDL_Rect CADRE2 = {12*TILESIZE,12*TILESIZE,6*TILESIZE,6*TILESIZE};
+                SDL_Rect CADRE3 = {18*TILESIZE,3*TILESIZE,6*TILESIZE,6*TILESIZE};
+                SDL_Rect CADRE4 = {18*TILESIZE,12*TILESIZE,6*TILESIZE,6*TILESIZE};
+                SDL_BlitSurface(cadre,NULL,window_surface,&CADRE1);
+                SDL_BlitSurface(cadre,NULL,window_surface,&CADRE2);
+                SDL_BlitSurface(cadre,NULL,window_surface,&CADRE3);
+                SDL_BlitSurface(cadre,NULL,window_surface,&CADRE4);
+
+                // pour écrire les informations sur le panneau d'affichage       
+                //le hold
+                SDL_Rect position = {13*TILESIZE,1*TILESIZE,6*TILESIZE,6*TILESIZE};
+                SDL_BlitSurface(text_next, NULL, window_surface, &position);
+                //le next
+                SDL_Rect position2 = {16*TILESIZE,10*TILESIZE,6*TILESIZE,6*TILESIZE};
+                SDL_BlitSurface(text_hold, NULL, window_surface, &position2);
+                //les affichages des mots score et lvl
+                SDL_Rect positionScore1 = {13*TILESIZE,19*TILESIZE,6*TILESIZE,6*TILESIZE};
+                SDL_BlitSurface(text_score1, NULL, window_surface, &positionScore1);
+                SDL_Rect positionScore2 = {19*TILESIZE,19*TILESIZE,6*TILESIZE,6*TILESIZE};
+                SDL_BlitSurface(text_score2, NULL, window_surface, &positionScore2);
+                SDL_Rect positionLevel1 = {13*TILESIZE,20*TILESIZE,6*TILESIZE,6*TILESIZE};
+                SDL_BlitSurface(text_lvl1, NULL, window_surface, &positionLevel1);
+                SDL_Rect positionLevel2 = {19*TILESIZE,20*TILESIZE,6*TILESIZE,6*TILESIZE};
+                SDL_BlitSurface(text_lvl2, NULL, window_surface, &positionLevel2);
+                //les scores et lvl effectifs
+                SDL_Rect positionSc1 = {16*TILESIZE,19*TILESIZE,6*TILESIZE,6*TILESIZE};
+                SDL_BlitSurface(text_sc1, NULL, window_surface, &positionSc1);
+                SDL_Rect positionSc2 = {22*TILESIZE,19*TILESIZE,6*TILESIZE,6*TILESIZE};
+                SDL_BlitSurface(text_sc2, NULL, window_surface, &positionSc2);
+                SDL_Rect positionL1 = {16*TILESIZE,20*TILESIZE,6*TILESIZE,6*TILESIZE};
+                SDL_BlitSurface(text_l1, NULL, window_surface, &positionL1);
+                SDL_Rect positionL2 = {22*TILESIZE,20*TILESIZE,6*TILESIZE,6*TILESIZE};
+                SDL_BlitSurface(text_l2, NULL, window_surface, &positionL2);
+                //Ini
+                if(start){
+                    T1.Creer();
+                    T2.Creer();
+                }
+                //Movement
+                if(!T1.gameover){
+                    T1.Horizontal();
+                }
+                if(!T2.gameover){
+                    T2.Horizontal();
+                }
+                //Rotation
+                if(!T1.gameover){
+                T1.Tourner();
+                }
+                if(!T2.gameover){
+                T2.Tourner();
+                }
+                //Aterrissage
+                if(!T1.gameover){
+                T1.Instant();
+                }
+                if(!T2.gameover){
+                T2.Instant();
+                }
+                //Hold
+                if(!T1.gameover){
+                T1.Hold();
+                }
+                if(!T2.gameover){
+                T2.Hold();
+                }
+                //Avancée
+                tps_actuel=SDL_GetTicks();
+                if(!T1.gameover){
+                T1.Avancer(tps_actuel);
+                }
+                tps_actuel=SDL_GetTicks();
+                if(!T2.gameover){
+                T2.Avancer(tps_actuel);
+                }
+                //Accélération
+                if(SDL_GetTicks()%5000==0){
+                    speed_ini+=-1;
+                }
+                //Check Lines
+                if(!T1.gameover){
+                T2.give_line(T1.Check_lines());
+                }
+                if(!T2.gameover){
+                T1.give_line(T2.Check_lines());
+                }
+                //Fin
+                start=false;
+                if(!T1.gameover){
+                T1.New_Frame(speed_ini);
+                }
+                if(!T2.gameover){
+                T2.New_Frame(speed_ini);
+                }
+                //Draw
+                T1.Draw_field(tiles,window_surface,0);
+                T2.Draw_field(tiles,window_surface,24);
+                T1.Draw_Piece(tiles,window_surface,0);
+                T2.Draw_Piece(tiles,window_surface,24);
+                T1.Draw_Next_Hold(tiles,window_surface,0);
+                T2.Draw_Next_Hold(tiles,window_surface,6);
+                SDL_UpdateWindowSurface(window);
+            }
         }
-        if(!T2.gameover){
-            T2.Horizontal();
-        }
-        //Rotation
-        if(!T1.gameover){
-        T1.Tourner();
-        }
-        if(!T2.gameover){
-        T2.Tourner();
-        }
-        //Aterrissage
-        if(!T1.gameover){
-        T1.Instant();
-        }
-        if(!T2.gameover){
-        T2.Instant();
-        }
-        //Hold
-        if(!T1.gameover){
-        T1.Hold();
-        }
-        if(!T2.gameover){
-        T2.Hold();
-        }
-        //Avancée
-        tps_actuel=SDL_GetTicks();
-        if(!T1.gameover){
-        T1.Avancer(tps_actuel);
-        }
-        tps_actuel=SDL_GetTicks();
-        if(!T2.gameover){
-        T2.Avancer(tps_actuel);
-        }
-        //Accélération
-        if(SDL_GetTicks()%5000==0){
-            speed_ini+=-1;
-        }
-        //Check Lines
-        if(!T1.gameover){
-        T2.give_line(T1.Check_lines());
-        }
-        if(!T2.gameover){
-        T1.give_line(T2.Check_lines());
-        }
-        //Fin
-        start=false;
-        if(!T1.gameover){
-        T1.New_Frame(speed_ini);
-        }
-        if(!T2.gameover){
-        T2.New_Frame(speed_ini);
-        }
-        //Draw
-        T1.Draw_field(tiles,window_surface,0);
-        T2.Draw_field(tiles,window_surface,24);
-        T1.Draw_Piece(tiles,window_surface,0);
-        T2.Draw_Piece(tiles,window_surface,24);
-        T1.Draw_Next_Hold(tiles,window_surface,0);
-        T2.Draw_Next_Hold(tiles,window_surface,6);
         SDL_UpdateWindowSurface(window);
     }
+}
+
+int main(){
+    run();
+    return 0;
 }
