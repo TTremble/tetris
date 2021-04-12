@@ -82,6 +82,7 @@ class Tetris{
         bool hold=false;
         int held=-1;
         bool used=false;
+        // a changer apres test
         bool gameover=false;
 
         bool check(){
@@ -308,7 +309,7 @@ void run()
         exit(EXIT_FAILURE);
     }
 
-    SDL_Window *window = SDL_CreateWindow("Menu Tetris",SDL_WINDOWPOS_CENTERED,SDL_WINDOWPOS_CENTERED,1152,736,0);
+    SDL_Window *window = SDL_CreateWindow("Tetris",SDL_WINDOWPOS_CENTERED,SDL_WINDOWPOS_CENTERED,1152,736,0);
     bool menu_open = true;
     SDL_Surface *image = SDL_LoadBMP("image.bmp");
     SDL_Surface *tiles = SDL_LoadBMP("Tiles.bmp");
@@ -342,8 +343,6 @@ void run()
         SDL_BlitSurface(text2J, NULL, window_surface, &position2J);
         SDL_BlitSurface(text_vsAI, NULL, window_surface, &positionVSAI);
         SDL_BlitSurface(text_quit, NULL, window_surface, &positionQuit);
-
-        SDL_BlitSurface(cadre, NULL, window_surface, NULL); 
         
         SDL_Event event;
 
@@ -401,15 +400,6 @@ void run()
 
             while(keep_window_open)
             {
-                std::string S = std::to_string(T.score);
-                sc = S.c_str();
-                std::string L = std::to_string(T.level);
-                l = L.c_str();
-
-                text_sc = TTF_RenderText_Solid(police_solo, sc, couleurPolice);
-                text_l = TTF_RenderText_Solid(police_solo, l, couleurPolice);
-
-                SDL_FillRect(window_surface, NULL, 0x000000);
                 //Events
                 SDL_Event e;
                 while(SDL_PollEvent(&e) > 0)
@@ -444,30 +434,7 @@ void run()
                         }
                     }
                 }
-                SDL_Rect Joueur = {12*TILESIZE,0,12*TILESIZE,22*TILESIZE};
-                SDL_BlitSurface(image, NULL, window_surface, &Joueur);
-                SDL_Rect CADRE1 = {24*TILESIZE,3*TILESIZE,6*TILESIZE,6*TILESIZE};
-                SDL_Rect CADRE2 = {24*TILESIZE,12*TILESIZE,6*TILESIZE,6*TILESIZE};
-                SDL_BlitSurface(cadre,NULL,window_surface,&CADRE1);
-                SDL_BlitSurface(cadre,NULL,window_surface,&CADRE2);
-
-                // pour écrire les informations sur le panneau d'affichage       
-                // le next
-                SDL_Rect position = {24*TILESIZE,1*TILESIZE,6*TILESIZE,6*TILESIZE};
-                SDL_BlitSurface(text_nxt, NULL, window_surface, &position);
-                // le hold
-                SDL_Rect position2 = {26*TILESIZE,10*TILESIZE,6*TILESIZE,6*TILESIZE};
-                SDL_BlitSurface(text_hld, NULL, window_surface, &position2);
-                //les affichages des mots score et lvl
-                SDL_Rect positionScore = {24*TILESIZE,19*TILESIZE,6*TILESIZE,6*TILESIZE};
-                SDL_BlitSurface(text_score, NULL, window_surface, &positionScore);
-                SDL_Rect positionLevel = {24*TILESIZE,20*TILESIZE,6*TILESIZE,6*TILESIZE};
-                SDL_BlitSurface(text_lvl, NULL, window_surface, &positionLevel);
-                //les scores et lvl effectifs
-                SDL_Rect positionSc = {28*TILESIZE,19*TILESIZE,6*TILESIZE,6*TILESIZE};
-                SDL_BlitSurface(text_sc, NULL, window_surface, &positionSc);
-                SDL_Rect positionL = {28*TILESIZE,20*TILESIZE,6*TILESIZE,6*TILESIZE};
-                SDL_BlitSurface(text_l, NULL, window_surface, &positionL);
+                
                 //Ini
                 if(start){
                     T.Creer();
@@ -501,12 +468,104 @@ void run()
                 if(!T.gameover){
                 T.Check_lines();
                 }
+                //game over
+                if(T.gameover){
+                    bool go = true; 
+                    while(go){
+                        SDL_Surface * text_gameover = NULL, *text_tryAgain = NULL;
+                        text_gameover = TTF_RenderText_Solid(police_nh, "GAME OVER", couleurPolice);
+                        text_tryAgain = TTF_RenderText_Solid(police_nh, "TRY AGAIN                T", couleurPolice);
+
+                        SDL_FillRect(window_surface, NULL, 0x000000);
+
+                        SDL_Rect positionGO = {13*TILESIZE,4*TILESIZE,6*TILESIZE,6*TILESIZE};
+                        SDL_BlitSurface(text_gameover, NULL, window_surface, &positionGO);
+
+                        SDL_Rect positionTryAgain = {10*TILESIZE,10*TILESIZE,6*TILESIZE,6*TILESIZE};
+                        SDL_BlitSurface(text_tryAgain, NULL, window_surface, &positionTryAgain);
+
+                        SDL_BlitSurface(text_quit, NULL, window_surface, &positionQuit);
+                        
+                        bool again = false;
+                        bool game_close = false;
+                        
+                        while(SDL_PollEvent(&event) > 0)
+                        {
+                            
+                            //closing window
+                            switch(event.type){
+                                case SDL_QUIT:
+                                    go = false;
+                                    exit(1);
+                                    break;
+                            }
+                            //Key presses
+                            if(event.type==SDL_KEYDOWN){
+                                if(event.key.keysym.sym==SDLK_t){
+                                    again = true;
+                                }
+                                else if(event.key.keysym.sym==SDLK_q){
+                                    game_close = true;
+                                    menu_open = false;
+                                    actif2 = false;
+                                    keep_window_open=false;
+                                    break;
+                                }
+                                break;
+                            }
+                        }
+                        if(again){ 
+                            run();
+                        }
+                        if(game_close){
+                            go = false;
+                            exit(1);
+                        }
+
+                        SDL_UpdateWindowSurface(window);
+                    }
+                }
                 //Fin
                 start=false;
                 if(!T.gameover){
                     T.New_Frame(speed_ini);
                 }
-                //Draw
+                // Blit
+                std::string S = std::to_string(T.score);
+                sc = S.c_str();
+                std::string L = std::to_string(T.level);
+                l = L.c_str();
+
+                text_sc = TTF_RenderText_Solid(police_solo, sc, couleurPolice);
+                text_l = TTF_RenderText_Solid(police_solo, l, couleurPolice);
+
+                SDL_FillRect(window_surface, NULL, 0x000000);
+
+                SDL_Rect Joueur = {12*TILESIZE,0,12*TILESIZE,22*TILESIZE};
+                SDL_BlitSurface(image, NULL, window_surface, &Joueur);
+                SDL_Rect CADRE1 = {24*TILESIZE,3*TILESIZE,6*TILESIZE,6*TILESIZE};
+                SDL_Rect CADRE2 = {24*TILESIZE,12*TILESIZE,6*TILESIZE,6*TILESIZE};
+                SDL_BlitSurface(cadre,NULL,window_surface,&CADRE1);
+                SDL_BlitSurface(cadre,NULL,window_surface,&CADRE2);
+
+                // pour écrire les informations sur le panneau d'affichage       
+                // le next
+                SDL_Rect position = {24*TILESIZE,1*TILESIZE,6*TILESIZE,6*TILESIZE};
+                SDL_BlitSurface(text_nxt, NULL, window_surface, &position);
+                // le hold
+                SDL_Rect position2 = {26*TILESIZE,10*TILESIZE,6*TILESIZE,6*TILESIZE};
+                SDL_BlitSurface(text_hld, NULL, window_surface, &position2);
+                //les affichages des mots score et lvl
+                SDL_Rect positionScore = {24*TILESIZE,19*TILESIZE,6*TILESIZE,6*TILESIZE};
+                SDL_BlitSurface(text_score, NULL, window_surface, &positionScore);
+                SDL_Rect positionLevel = {24*TILESIZE,20*TILESIZE,6*TILESIZE,6*TILESIZE};
+                SDL_BlitSurface(text_lvl, NULL, window_surface, &positionLevel);
+                //les scores et lvl effectifs
+                SDL_Rect positionSc = {28*TILESIZE,19*TILESIZE,6*TILESIZE,6*TILESIZE};
+                SDL_BlitSurface(text_sc, NULL, window_surface, &positionSc);
+                SDL_Rect positionL = {28*TILESIZE,20*TILESIZE,6*TILESIZE,6*TILESIZE};
+                SDL_BlitSurface(text_l, NULL, window_surface, &positionL);
+                // Draw
                 T.Draw_field(tiles,window_surface,12);
                 T.Draw_Piece(tiles,window_surface,12);
                 T.Draw_Next_Hold(tiles,window_surface,12);
@@ -603,10 +662,10 @@ void run()
                         else if(e.key.keysym.sym==SDLK_DOWN){
                             T2.SPEED=T2.SPEED/10;
                         }
-                        else if(e.key.keysym.sym==SDLK_c){
+                        else if(e.key.keysym.sym==SDLK_SPACE){
                             T2.space=true;
                         }
-                        else if(e.key.keysym.sym==SDLK_SPACE){
+                        else if(e.key.keysym.sym==SDLK_q){
                             T2.hold=true;
                         }
                     }
@@ -700,6 +759,63 @@ void run()
                 }
                 if(!T2.gameover){
                 T1.give_line(T2.Check_lines());
+                }
+                //game over
+                if(T1.gameover || T2.gameover){
+                    bool go = true; 
+                    while(go){
+                        SDL_Surface * text_gameover = NULL, *text_tryAgain = NULL;
+                        text_gameover = TTF_RenderText_Solid(police_nh, "GAME OVER", couleurPolice);
+                        text_tryAgain = TTF_RenderText_Solid(police_nh, "TRY AGAIN                T", couleurPolice);
+
+                        SDL_FillRect(window_surface, NULL, 0x000000);
+
+                        SDL_Rect positionGO = {13*TILESIZE,4*TILESIZE,6*TILESIZE,6*TILESIZE};
+                        SDL_BlitSurface(text_gameover, NULL, window_surface, &positionGO);
+
+                        SDL_Rect positionTryAgain = {10*TILESIZE,10*TILESIZE,6*TILESIZE,6*TILESIZE};
+                        SDL_BlitSurface(text_tryAgain, NULL, window_surface, &positionTryAgain);
+
+                        SDL_BlitSurface(text_quit, NULL, window_surface, &positionQuit);
+                        
+                        bool again = false;
+                        bool game_close = false;
+                        
+                        while(SDL_PollEvent(&event) > 0)
+                        {
+                            
+                            //closing window
+                            switch(event.type){
+                                case SDL_QUIT:
+                                    go = false;
+                                    exit(1);
+                                    break;
+                            }
+                            //Key presses
+                            if(event.type==SDL_KEYDOWN){
+                                if(event.key.keysym.sym==SDLK_t){
+                                    again = true;
+                                }
+                                else if(event.key.keysym.sym==SDLK_q){
+                                    game_close = true;
+                                    menu_open = false;
+                                    actif2 = false;
+                                    keep_window_open=false;
+                                    break;
+                                }
+                                break;
+                            }
+                        }
+                        if(again){ 
+                            run();
+                        }
+                        if(game_close){
+                            go = false;
+                            exit(1);
+                        }
+
+                        SDL_UpdateWindowSurface(window);
+                    }
                 }
                 //Fin
                 start=false;
