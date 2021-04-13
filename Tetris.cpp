@@ -10,8 +10,6 @@
 #include <stdlib.h>
 #include<iostream>
 #include<SDL2/SDL.h>
-#include<SDL2/SDL_ttf.h>
-
 
 const int TILESIZE=32;
 
@@ -83,6 +81,7 @@ class Tetris{
         int held=-1;
         bool used=false;
         bool gameover=false;
+        bool new_piece=true;
 
         bool check(){
             for(int i=0;i<4;i++){
@@ -145,9 +144,19 @@ class Tetris{
 
         void Creer(){
             for(int i=0;i<4;i++){
-                a[i].x = blocks[n].cases[i]%2 + N/2 -1;
-                a[i].y = blocks[n].cases[i]/2 -1;
+                if(n==1){
+                    a[i].x = blocks[n].cases[i]%2 + N/2 -1;
+                    a[i].y = blocks[n].cases[i]/2 + 1;
+                }
+                else{
+                    a[i].x = blocks[n].cases[i]%2 + N/2 -1;
+                    a[i].y = blocks[n].cases[i]/2;
+                }
+                if(field[a[i].y][a[i].x]!=0){
+                    gameover=true;
+                }
             }
+            new_piece=true;
         }
 
         void Instant(){
@@ -163,8 +172,12 @@ class Tetris{
                     }
                 }
                 for(int i=0;i<4;i++){
-                    a[i].y=a[i].y+diff-1;
+                    field[a[i].y+diff-1][a[i].x]=blocks[n].couleur;
                 }
+                n=next;
+                next=rand()%7;
+                used=false;
+                Creer();
             }
         }
 
@@ -200,9 +213,6 @@ class Tetris{
                     n=next;
                     next=rand()%7;
                     for(int i=0;i<4;i++){
-                        if(b[i].y<1){
-                            gameover=true;
-                        }
                         Creer();
                     }
                 }
@@ -282,8 +292,6 @@ class Tetris{
             }
         }
 
-        
-
         void Draw_Next_Hold(SDL_Surface* tiles, SDL_Surface* window_surface, int offset){
             for(int i=0;i<4;i++){
                 SDL_Rect NEXTPOS = {(offset+14+blocks[next].cases[i]%2)*TILESIZE,(4+blocks[next].cases[i]/2)*TILESIZE,TILESIZE,TILESIZE};
@@ -298,6 +306,190 @@ class Tetris{
         };
 };
 
+class AI{
+    public:
+        int rotations=0;
+        int mouvements=0;
+        int etapes_rota=0;
+        int etapes_move=0;
+        bool new_piece=true;
+        int trous_prec=0;
+        bool hold=false;
+
+        int compte_trous(int field[M][N]){
+            int ntrous=0;
+            for(int j=0;j<N;j++){
+                int trous=0;
+                bool sous=false;
+                for(int i=0;i<M;i++){
+                    if(field[i][j]!=0){
+                        sous=true;
+                    }
+                    if(field[i][j]==0&&sous==true){
+                        sous=false;
+                        trous++;
+                    }
+                }
+                ntrous+=trous;
+            }
+            return ntrous;
+        }
+
+        int evaluer_jeu(int field[M][N]){
+            int hauteur=M;
+            int hauteurcolumns[N];
+            std::fill_n(hauteurcolumns,N,M);
+            int score=0;
+            for(int i=0;i<M;i++){
+                for(int j=0;j<N;j++){
+                    if(field[i][j]!=0&&hauteur==M){
+                        hauteur=M-i;
+                    }
+                    if(field[i][j]!=0&&hauteurcolumns[j]==M){
+                        hauteurcolumns[j]=hauteur-(M-i);
+                    }
+                    if(i==M-1&&hauteurcolumns[j]==M){
+                        hauteurcolumns[j]=hauteur;
+                    }
+                }
+            }
+            score = pow(8*hauteur,2) + 1000*compte_trous(field);
+            for(int j=0;j<N;j++){
+                score= score + pow(hauteurcolumns[j],2);
+            }
+            return score;
+            
+        }
+
+        void evaluer_positions(int n, int field[M][N]){
+            trous_prec=compte_trous(field);
+            int best=100000;
+            int trous_ac=trous_prec;
+            for(int r=0;r<5;r++){
+                for(int p=5;p>-1;p+=-1){
+                    Tetris Brain;
+                    copy(Brain.field,field);
+                    Brain.n=n;
+                    Brain.Creer();
+                    Brain.space=true;
+                    Brain.dx=-1;
+                    Brain.rotate=true;
+                    for (int t=0;t<r;t++){
+                        Brain.Tourner();
+                    }
+                    for (int d=0;d<p;d++){
+                        Brain.Horizontal();
+                    }
+                    Brain.Instant();
+                    Brain.Check_lines();
+                    int e=evaluer_jeu(Brain.field);
+                    if(e<best){
+                        best=e;
+                        trous_ac=compte_trous(Brain.field);
+                        if(trous_ac>trous_prec){
+                            hold=true;
+                        }
+                        else{
+                            hold=false;
+                        }
+                        rotations=r;
+                        mouvements=-1*p;
+                    }
+                    
+                }
+                for(int p=5;p>-1;p+=-1){
+                    Tetris Brain;
+                    copy(Brain.field,field);
+                    Brain.n=n;
+                    Brain.Creer();
+                    Brain.space=true;
+                    Brain.dx=+1;
+                    Brain.rotate=true;
+                    for (int t=0;t<r;t++){
+                        Brain.Tourner();
+                    }
+                    for (int d=0;d<p;d++){
+                        Brain.Horizontal();
+                    }
+                    Brain.Instant();
+                    Brain.Check_lines();
+                    int e=evaluer_jeu(Brain.field);
+                    if(e<best){
+                        best=e;
+                        trous_ac=compte_trous(Brain.field);
+                        if(trous_ac>trous_prec){
+                            hold=true;
+                        }
+                        else{
+                            hold=false;
+                        }
+                        rotations=r;
+                        mouvements=p;
+                    }
+                }
+            }
+        }
+
+        void Jouer(Tetris* T){
+            if(T->new_piece){
+                evaluer_positions(T->n,T->field);
+                T->new_piece=false;
+            }
+            else{
+                if(hold==true&&T->used==false){
+                    T->hold=true;
+                    new_piece=true;
+                    hold=false;
+                    
+                }
+                else{
+                    if(etapes_rota<rotations){
+                        T->rotate=true;
+                        etapes_rota++;
+                    }
+                    if(etapes_move<abs(mouvements)){
+                        if(mouvements>0){
+                            T->dx=+1;
+                        }
+                        if(mouvements<0){
+                            T->dx=-1;
+                        }
+                        etapes_move++;
+                    }
+                    if(etapes_rota==rotations&&etapes_move==abs(mouvements)){
+                        T->space=true;
+                        rotations=0;
+                        mouvements=0;
+                        etapes_rota=0;
+                        etapes_move=0;
+                    }
+                }
+            }
+        }
+
+        void copy(int field1[M][N],int field2[M][N]){
+            for(int i=0;i<M;i++){
+                for(int j=0;j<M;j++){
+                    field1[i][j]=field2[i][j];
+                }
+            }
+        }
+
+        void show(int field[M][N]){
+    for (int i = 0; i < M; i++){
+        for (int j = 0; j < N; j++)
+        {
+            std::cout << field[i][j] << " ";
+        }
+            
+        // Newline for new row
+        std::cout << std::endl;
+        }
+        std::cout << "===========================" << std::endl;
+}
+};
+
+
 
 int main()
 {
@@ -308,59 +500,18 @@ int main()
     SDL_Surface *tiles = SDL_LoadBMP("Tiles.bmp");
     SDL_Surface *cadre = SDL_LoadBMP("cadre.bmp");
     SDL_Surface *window_surface = SDL_GetWindowSurface(window);
-
-    // declaration des paramètres pour les textes 
-
-    TTF_Font *police_nh = NULL, * police_score = NULL;
-    SDL_Color couleurPolice = {168,168,168};
-    SDL_Surface *text_next = NULL, *text_hold = NULL, *text_score1 = NULL, *text_score2 = NULL, *text_lvl1 = NULL, * text_lvl2 = NULL;
-    SDL_Surface *text_l1 = NULL, *text_l2 = NULL, *text_sc1 = NULL, *text_sc2 = NULL;
-
-    if ( TTF_Init() == -1)
-    {
-        fprintf(stderr, "Erreur d'initialisation de TTF_Init : %s\n", TTF_GetError());
-        exit(EXIT_FAILURE);
-    }
-
-    police_nh = TTF_OpenFont("SilverMedal.ttf", 42);
-    text_next = TTF_RenderText_Solid(police_nh, "NEXT BLOCK", couleurPolice);
-    text_hold = TTF_RenderText_Solid(police_nh, "HOLD", couleurPolice);
-
-    police_score = TTF_OpenFont("SilverMedal.ttf", 20);
-    text_score1 = TTF_RenderText_Solid(police_score, "SCORE", couleurPolice);
-    text_score2 = TTF_RenderText_Solid(police_score, "SCORE", couleurPolice);
-    text_lvl1 = TTF_RenderText_Solid(police_score, "LEVEL", couleurPolice);
-    text_lvl2 = TTF_RenderText_Solid(police_score, "LEVEL", couleurPolice);
-
-    const char * sc1;
-    const char * sc2;
-    const char * l1;
-    const char * l2;
-
     //Quelques variables
     int tps_actuel=0;
-    int speed_ini=300;
+    int speed_ini=500;
     bool start=true;
+    AI ai;
+    AI ai2;
     Tetris T1;
     Tetris T2;
+    int tps2=0;
     //Ecrire un truc ici
     while(keep_window_open)
     {
-
-        std::string S1 = std::to_string(T1.score);
-        sc1 = S1.c_str();
-        std::string S2 = std::to_string(T2.score);
-        sc2 = S2.c_str();
-        std::string L1 = std::to_string(T1.level);
-        l1 = L1.c_str();
-        std::string L2 = std::to_string(T2.level);
-        l2 = L2.c_str();
-
-        text_sc1 = TTF_RenderText_Solid(police_score, sc1, couleurPolice);
-        text_sc2 = TTF_RenderText_Solid(police_score, sc2, couleurPolice);
-        text_l1 = TTF_RenderText_Solid(police_score, l1, couleurPolice);
-        text_l2 = TTF_RenderText_Solid(police_score, l2, couleurPolice);
-
         SDL_FillRect(window_surface, NULL, 0x000000);
         //Events
         SDL_Event e;
@@ -423,36 +574,17 @@ int main()
         SDL_BlitSurface(cadre,NULL,window_surface,&CADRE2);
         SDL_BlitSurface(cadre,NULL,window_surface,&CADRE3);
         SDL_BlitSurface(cadre,NULL,window_surface,&CADRE4);
-
-        // pour écrire les informations sur le panneau d'affichage       
-        //le hold
-        SDL_Rect position = {13*TILESIZE,1*TILESIZE,6*TILESIZE,6*TILESIZE};
-        SDL_BlitSurface(text_next, NULL, window_surface, &position);
-        //le next
-        SDL_Rect position2 = {16*TILESIZE,10*TILESIZE,6*TILESIZE,6*TILESIZE};
-        SDL_BlitSurface(text_hold, NULL, window_surface, &position2);
-        //les affichages des mots score et lvl
-        SDL_Rect positionScore1 = {13*TILESIZE,19*TILESIZE,6*TILESIZE,6*TILESIZE};
-        SDL_BlitSurface(text_score1, NULL, window_surface, &positionScore1);
-        SDL_Rect positionScore2 = {19*TILESIZE,19*TILESIZE,6*TILESIZE,6*TILESIZE};
-        SDL_BlitSurface(text_score2, NULL, window_surface, &positionScore2);
-        SDL_Rect positionLevel1 = {13*TILESIZE,20*TILESIZE,6*TILESIZE,6*TILESIZE};
-        SDL_BlitSurface(text_lvl1, NULL, window_surface, &positionLevel1);
-        SDL_Rect positionLevel2 = {19*TILESIZE,20*TILESIZE,6*TILESIZE,6*TILESIZE};
-        SDL_BlitSurface(text_lvl2, NULL, window_surface, &positionLevel2);
-        //les scores et lvl effectifs
-        SDL_Rect positionSc1 = {16*TILESIZE,19*TILESIZE,6*TILESIZE,6*TILESIZE};
-        SDL_BlitSurface(text_sc1, NULL, window_surface, &positionSc1);
-        SDL_Rect positionSc2 = {22*TILESIZE,19*TILESIZE,6*TILESIZE,6*TILESIZE};
-        SDL_BlitSurface(text_sc2, NULL, window_surface, &positionSc2);
-        SDL_Rect positionL1 = {16*TILESIZE,20*TILESIZE,6*TILESIZE,6*TILESIZE};
-        SDL_BlitSurface(text_l1, NULL, window_surface, &positionL1);
-        SDL_Rect positionL2 = {22*TILESIZE,20*TILESIZE,6*TILESIZE,6*TILESIZE};
-        SDL_BlitSurface(text_l2, NULL, window_surface, &positionL2);
         //Ini
         if(start){
             T1.Creer();
             T2.Creer();
+        }
+        //Decision
+        int tps=SDL_GetTicks();
+        if(tps-tps2>50){
+            ai.Jouer(&T1);
+            ai2.Jouer(&T2);
+            tps2=tps;
         }
         //Movement
         if(!T1.gameover){
