@@ -300,7 +300,7 @@ class Tetris{
 };
 
 
-void run() 
+void run(SDL_Window *window, SDL_Surface *window_surface, SDL_Surface *image, SDL_Surface *tiles, SDL_Surface *cadre ) 
 {
     
     if ( TTF_Init() == -1)
@@ -309,12 +309,7 @@ void run()
         exit(EXIT_FAILURE);
     }
 
-    SDL_Window *window = SDL_CreateWindow("Tetris",SDL_WINDOWPOS_CENTERED,SDL_WINDOWPOS_CENTERED,1152,736,0);
     bool menu_open = true;
-    SDL_Surface *image = SDL_LoadBMP("image.bmp");
-    SDL_Surface *tiles = SDL_LoadBMP("Tiles.bmp");
-    SDL_Surface *cadre = SDL_LoadBMP("cadre.bmp");
-    SDL_Surface *window_surface = SDL_GetWindowSurface(window);
 
     TTF_Font *police_nh = NULL, * police_score = NULL;
     SDL_Color couleurPolice = {168,168,168};
@@ -365,6 +360,7 @@ void run()
                 }
                 else if(event.key.keysym.sym==SDLK_q){
                     menu_open = false;
+                    exit(1);
                 }
                 else if(event.key.keysym.sym==SDLK_1){
                     actif2 = true;
@@ -472,7 +468,20 @@ void run()
                 if(T.gameover){
                     bool go = true; 
                     while(go){
-                        SDL_Surface * text_gameover = NULL, *text_tryAgain = NULL;
+                        
+                        SDL_Surface *text_gameover = NULL, *text_tryAgain = NULL, *text_scoreGO = NULL, *text_levelGO = NULL;
+                        SDL_Surface *scGO = NULL, *lvlGO = NULL;
+
+                        std::string S = std::to_string(T.score);
+                        sc = S.c_str();
+                        std::string L = std::to_string(T.level);
+                        l = L.c_str();
+
+                        lvlGO = TTF_RenderText_Solid(police_nh, sc, couleurPolice);
+                        scGO = TTF_RenderText_Solid(police_nh, l, couleurPolice);
+
+                        text_scoreGO = TTF_RenderText_Solid(police_nh, "SCORE ", couleurPolice);
+                        text_levelGO = TTF_RenderText_Solid(police_nh, "LEVEL ", couleurPolice);
                         text_gameover = TTF_RenderText_Solid(police_nh, "GAME OVER", couleurPolice);
                         text_tryAgain = TTF_RenderText_Solid(police_nh, "TRY AGAIN                T", couleurPolice);
 
@@ -481,8 +490,20 @@ void run()
                         SDL_Rect positionGO = {13*TILESIZE,4*TILESIZE,6*TILESIZE,6*TILESIZE};
                         SDL_BlitSurface(text_gameover, NULL, window_surface, &positionGO);
 
-                        SDL_Rect positionTryAgain = {10*TILESIZE,10*TILESIZE,6*TILESIZE,6*TILESIZE};
+                        SDL_Rect positionTryAgain = {10*TILESIZE,12*TILESIZE,6*TILESIZE,6*TILESIZE};
                         SDL_BlitSurface(text_tryAgain, NULL, window_surface, &positionTryAgain);
+
+                        SDL_Rect positionScoreGO = {10*TILESIZE,8*TILESIZE,6*TILESIZE,6*TILESIZE};
+                        SDL_BlitSurface(text_scoreGO, NULL, window_surface, &positionScoreGO);
+
+                        SDL_Rect positionLevelGO = {10*TILESIZE,10*TILESIZE,6*TILESIZE,6*TILESIZE};
+                        SDL_BlitSurface(text_levelGO, NULL, window_surface, &positionLevelGO);
+                        
+                        SDL_Rect positionScGO = {24*TILESIZE,8*TILESIZE,6*TILESIZE,6*TILESIZE};
+                        SDL_BlitSurface(scGO, NULL, window_surface, &positionScGO);
+                        
+                        SDL_Rect positionLvlGO = {24*TILESIZE,10*TILESIZE,6*TILESIZE,6*TILESIZE};
+                        SDL_BlitSurface(lvlGO, NULL, window_surface, &positionLvlGO);
 
                         SDL_BlitSurface(text_quit, NULL, window_surface, &positionQuit);
                         
@@ -515,7 +536,8 @@ void run()
                             }
                         }
                         if(again){ 
-                            run();
+                            run(window, window_surface, image, tiles, cadre);
+                            exit(1);
                         }
                         if(game_close){
                             go = false;
@@ -764,17 +786,59 @@ void run()
                 if(T1.gameover || T2.gameover){
                     bool go = true; 
                     while(go){
-                        SDL_Surface * text_gameover = NULL, *text_tryAgain = NULL;
-                        text_gameover = TTF_RenderText_Solid(police_nh, "GAME OVER", couleurPolice);
+
+                        SDL_Surface *scGO1 = NULL, *scGO2 = NULL, *lvlGO1 = NULL,  *lvlGO2 = NULL;
+
+                        std::string S1 = std::to_string(T1.score);
+                        sc1 = S1.c_str();
+                        std::string S2 = std::to_string(T2.score);
+                        sc2 = S2.c_str();
+                        std::string L1 = std::to_string(T1.level);
+                        l1 = L1.c_str();
+                        std::string L2 = std::to_string(T2.level);
+                        l2 = L2.c_str();
+
+                        scGO1 = TTF_RenderText_Solid(police_nh, sc1, couleurPolice);
+                        scGO2 = TTF_RenderText_Solid(police_nh, sc2, couleurPolice);
+                        lvlGO1 = TTF_RenderText_Solid(police_nh, l1, couleurPolice);
+                        lvlGO2 = TTF_RenderText_Solid(police_nh, l2, couleurPolice);
+
+                        SDL_Surface * text_gameover = NULL, *text_tryAgain = NULL, *text_scoreGO = NULL, *text_levelGO = NULL, *text_joueurs = NULL;
+                    
+                        text_joueurs = TTF_RenderText_Solid(police_score, "PLAYER 1               PLAYER 2", couleurPolice);
+                        text_gameover = TTF_RenderText_Solid(police_nh, "YOU WIN AND HE LOOSE", couleurPolice);
                         text_tryAgain = TTF_RenderText_Solid(police_nh, "TRY AGAIN                T", couleurPolice);
+                        text_scoreGO = TTF_RenderText_Solid(police_nh, "SCORE ", couleurPolice);
+                        text_levelGO = TTF_RenderText_Solid(police_nh, "LEVEL ", couleurPolice);
 
                         SDL_FillRect(window_surface, NULL, 0x000000);
 
-                        SDL_Rect positionGO = {13*TILESIZE,4*TILESIZE,6*TILESIZE,6*TILESIZE};
+                        SDL_Rect positionGO = {10*TILESIZE,4*TILESIZE,6*TILESIZE,6*TILESIZE};
                         SDL_BlitSurface(text_gameover, NULL, window_surface, &positionGO);
 
-                        SDL_Rect positionTryAgain = {10*TILESIZE,10*TILESIZE,6*TILESIZE,6*TILESIZE};
+                        SDL_Rect positionTryAgain = {10*TILESIZE,12*TILESIZE,6*TILESIZE,6*TILESIZE};
                         SDL_BlitSurface(text_tryAgain, NULL, window_surface, &positionTryAgain);
+
+                        SDL_Rect positionJoueurs = {22*TILESIZE,6*TILESIZE,6*TILESIZE,6*TILESIZE};
+                        SDL_BlitSurface(text_joueurs, NULL, window_surface, &positionJoueurs);
+
+                        SDL_Rect positionScoreGO = {10*TILESIZE,8*TILESIZE,6*TILESIZE,6*TILESIZE};
+                        SDL_BlitSurface(text_scoreGO, NULL, window_surface, &positionScoreGO);
+
+                        SDL_Rect positionLevelGO = {10*TILESIZE,10*TILESIZE,6*TILESIZE,6*TILESIZE};
+                        SDL_BlitSurface(text_levelGO, NULL, window_surface, &positionLevelGO);
+                        
+                        SDL_Rect positionScGO1 = {24*TILESIZE,8*TILESIZE,6*TILESIZE,6*TILESIZE};
+                        SDL_BlitSurface(scGO1, NULL, window_surface, &positionScGO1);
+                        
+                        SDL_Rect positionScGO2 = {28*TILESIZE,8*TILESIZE,6*TILESIZE,6*TILESIZE};
+                        SDL_BlitSurface(scGO2, NULL, window_surface, &positionScGO2);
+
+                        SDL_Rect positionLvlGO1 = {24*TILESIZE,10*TILESIZE,6*TILESIZE,6*TILESIZE};
+                        SDL_BlitSurface(lvlGO1, NULL, window_surface, &positionLvlGO1);
+
+                        SDL_Rect positionLvlGO2 = {28*TILESIZE,10*TILESIZE,6*TILESIZE,6*TILESIZE};
+                        SDL_BlitSurface(lvlGO2, NULL, window_surface, &positionLvlGO2);
 
                         SDL_BlitSurface(text_quit, NULL, window_surface, &positionQuit);
                         
@@ -807,7 +871,8 @@ void run()
                             }
                         }
                         if(again){ 
-                            run();
+                            run(window, window_surface, image, tiles, cadre);
+                            exit(1);
                         }
                         if(game_close){
                             go = false;
@@ -840,6 +905,13 @@ void run()
 }
 
 int main(){
-    run();
+
+    SDL_Window *window = SDL_CreateWindow("Tetris",SDL_WINDOWPOS_CENTERED,SDL_WINDOWPOS_CENTERED,1152,736,0);
+    SDL_Surface *image = SDL_LoadBMP("image.bmp");
+    SDL_Surface *tiles = SDL_LoadBMP("Tiles.bmp");
+    SDL_Surface *cadre = SDL_LoadBMP("cadre.bmp");
+    SDL_Surface *window_surface = SDL_GetWindowSurface(window);
+
+    run(window, window_surface, image, tiles, cadre);
     return 0;
 }
