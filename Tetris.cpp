@@ -1208,7 +1208,7 @@ void run(SDL_Window *window, SDL_Surface *window_surface, SDL_Surface *image, SD
                 T1.give_line(T2.Check_lines());
                 }
                 //game over
-                if(T1.gameover && T2.gameover){
+                if(T1.gameover){
                     SDL_FreeSurface(text_next);SDL_FreeSurface(text_hold);SDL_FreeSurface(text_score1);SDL_FreeSurface(text_score2);SDL_FreeSurface(text_lvl1);SDL_FreeSurface(text_lvl2);SDL_FreeSurface(text_l1);SDL_FreeSurface(text_l2);SDL_FreeSurface(text_sc1);SDL_FreeSurface(text_sc2);
                     bool go = true; 
                     while(go){
